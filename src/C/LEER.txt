@@ -1,0 +1,32 @@
+PARA COMPILAR EN C (usando Makefile)
+
+1.  El 'Makefile' ya tiene configurado ciertas variables que simplifican la creacion de reglas
+    para compilar los ejecutables.
+
+2.  El 'Makefile' tiene configurados los directorios comunes donde se instalan las librerias compiladas 
+    y sus archivos fuente en el sistema al usar instaladores de paquetes (como apt-get). Para agregar 
+    dependencias de estas libs solo hace falta generar una variable que tenga los nombres.
+
+Ej. GUILIB = -lsystem -lgeometry ... 
+
+3.  Para librerias que no sean instaladas por instalador de paquetes o para modulos desarrollados para el
+    proyecto estas se guardan en las carpetas 'libs' y 'modules' respectivamente. El 'Makefile' ya tiene
+    configurado que compile todo el codigo fuente en estas carpetas.
+
+4.  Para compilar un archivo la regla del 'Makefile' debe incluir las variables que tengan las dependencias
+    que requiere el archivo principal para que se compile exitosamente
+
+Ej. example:
+        ${CC} ${FLAGS} ./out/$@ file.c
+        ./out/$@
+    (en este ejemplo el archivo principal se llama 'file.c' y '$@' indica que el ejecutable compilado se llama igual que la regla)
+
+----------------------------------------------------------------------------------------------------
+DONDE GENERAR EL CODIGO
+
+Todo el codigo se debe generar en el directorio:
+
+    >> cd ./src/C
+
+En este caso los archivos pueden llamarse como de cualquier manera, pero para modular el codigo (en archivos .h y .c)
+los archivos se recomienda guardarlos en 'libs' o 'modules'.

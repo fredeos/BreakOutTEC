@@ -1,0 +1,44 @@
+PARA COMPILAR EN JAVA (usando MAVEN)
+
+1. Modificar 'pom.xml'. Este archivo contiene todas las propiedades y dependencias que ocupa
+maven para generar un proyecto/programa en JAVA
+
+    - Agregar una propiedad (les recomiendo buscar en internet)
+Ej. <propiedad>
+        [contenido]
+    </propiedad>
+
+    - Agregar una dependencia
+Ej. <dependencies>
+        [...dependencias existentes...]
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>20.0.2</version>
+        </dependency>
+    </dependencies>
+
+    - Para modificar cualquiera de las anteriores solo se modifica el contenido entre
+      las clausulas(<x>:</x>)
+
+2. Compilar el codigo.
+
+    >> cd src/java [los siguientes comandos se deben hacer desde este directorio]
+    >> mvn compile
+
+3. Empaquetar el programa en formato .JAR (ejecutable)
+
+    >> mvn package
+
+4. Ejecutar el programa
+
+    >> java -cp target/breakout-server-1.0-SNAPSHOT.jar breakout.App
+--------------------------------------------------------------------------------------------
+DONDE GENENERAR EL CODIGO
+
+Todo codigo para el programa se debe generar desde el directorio (visto desde la raiz del git)
+
+    >> cd src/java/breakout-server/src/java/main/java/breakout/App
+
+En ese directorio se deben generar los archivos que se ocupen para el programa. Para nombrar los archivos,
+todos estos deben llamarse igual que la clase que contiene el archivo.

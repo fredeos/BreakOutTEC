@@ -21,18 +21,21 @@ Ej. <dependencies>
     - Para modificar cualquiera de las anteriores solo se modifica el contenido entre
       las clausulas(<x>:</x>)
 
-2. Compilar el codigo.
+2. Compilar el codigo y empaquetar en un .JAR:
 
-    >> cd src/java [los siguientes comandos se deben hacer desde este directorio]
+    >> cd src/java/Breakout [los siguientes comandos se deben hacer desde este directorio]
     >> mvn compile
-
-3. Empaquetar el programa en formato .JAR (ejecutable)
-
     >> mvn package
 
-4. Ejecutar el programa
+3. Ejecutar el programa en un ejecutable .JAR
 
-    >> java -cp target/breakout-server-1.0-SNAPSHOT.jar breakout.App
+    >> java -cp target/Breakout-1.0-SNAPSHOT.jar breakout.Program
+
+4. (DE SER NECESARIO) Ejectutar una archivo de Java sin empaquetar
+
+    >> mvn compile
+    >> mvn exec:java -Dexec.mainClass="breakout.app.[-nombre.del.archivo-]"
+
 --------------------------------------------------------------------------------------------
 DONDE GENENERAR EL CODIGO
 

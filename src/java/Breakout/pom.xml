@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>breakout.App</groupId>
-  <artifactId>breakout-server</artifactId>
+  <groupId>breakout.app</groupId>
+  <artifactId>Breakout</artifactId>
   <packaging>jar</packaging>
   <version>1.0-SNAPSHOT</version>
-  <name>breakout-server</name>
+  <name>Breakout</name>
   <url>http://maven.apache.org</url>
   <properties> 
     <maven.compiler.source>1.8</maven.compiler.source>

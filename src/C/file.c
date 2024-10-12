@@ -11,6 +11,6 @@ int main(){
     close(cliente->sock_container.socket);
     free(cliente);
 
-    printf("Conexion finalizada suavemente!");
+    printf("Conexion finalizada suavemente!\n");
     return 0;
 }

@@ -1,4 +1,8 @@
 package breakout.app.modules;
+
+import breakout.app.modules.data_structures.CircularList;
+import breakout.app.modules.data_structures.LinkedList;
+import breakout.app.modules.clients.*;
 import java.io.*;
 import java.net.*;
 
@@ -11,6 +15,9 @@ public class Server {
     private ServerSocket socket; 
     private Thread handler;
     private boolean active;
+
+    private LinkedList clientlist;
+    private CircularList playerlist;
 
     // ------------------------------[ Metodos ]------------------------------
     /* Metodo constructor de la clase servidor
@@ -45,7 +52,7 @@ public class Server {
                     PrintWriter output = new PrintWriter(cliente.getOutputStream());
 
                     String message = input.readLine();
-                    System.out.println(message);
+                    System.out.println("Cliente: "+message);
                     System.out.println("Mensaje leido. Terminando conexion");
                     cliente.close();
 
@@ -60,6 +67,21 @@ public class Server {
         this.handler.start();
     }
 
+    private void openPlayerChannel(ClientPlayer client){
+        Thread communication_thread = new Thread(()->{
+
+        });
+        communication_thread.start();
+    }
+
+    private void openSpectatorChannel(ClientSpectator client){
+        Thread communication_thread = new Thread(()->{
+
+        });
+        communication_thread.start();
+    }
+
+
     /* Verifica que el servidor aun este activo*/
     private synchronized boolean isActive(){
         return this.active;
@@ -68,6 +90,8 @@ public class Server {
     /* Activa/desactiva la comunicacion del servidor con sus clientes*/
     public synchronized void toggleActive(){
         this.active = !this.active;
-        // TODO: Falta implementar que se notifique a los clientes que la conexion ha finalizado
+        if (this.active == false){
+            // TODO: Falta implementar que se notifique a los clientes que la conexion ha finalizado
+        }
     }
 }

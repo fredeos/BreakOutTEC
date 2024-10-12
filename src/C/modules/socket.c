@@ -30,7 +30,7 @@ struct client *create_client(int port, char *server_ip){
     // Crear un espacio en memoria para un nuevo cliente
     struct client* instance = (struct client*) malloc(1*sizeof(struct client));
     if (instance == NULL){ // Error durante la asignacion de memoria
-        printf("ERROR: No se pudo asignar memoria para un nuevo cliente");
+        printf("ERROR: No se pudo asignar memoria para un nuevo cliente\n");
         return NULL;
     }
     initialize(&instance->sock_container, port, server_ip);
@@ -40,16 +40,16 @@ struct client *create_client(int port, char *server_ip){
 
 void send_message(struct client *client){
     if (send(client->sock_container.socket, client->OUTbuffer, strlen(client->OUTbuffer), 0) < 0){
-        printf("ERROR: No se pudo enviar el mensaje");
+        printf("ERROR: No se pudo enviar el mensaje\n");
         return;
     }
-    printf("Mensaje enviado!");
+    printf("Mensaje enviado!\n");
     return;
 }
 
 void receive_message(struct client *client){
     if (recv(client->sock_container.socket, client->INbuffer, sizeof(client->INbuffer), 0) < 0){
-        printf("ERROR: No se pudo recibir respuesta del servidor");
+        printf("ERROR: No se pudo recibir respuesta del servidor\n");
         close(client->sock_container.socket);
         return;
     }

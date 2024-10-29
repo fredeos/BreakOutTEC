@@ -1,4 +1,4 @@
-package breakout.app.modules.data_structures;
+package breakout.app.Structures;
 
 /* Par (tupla) de datos mutable estandar*/
 public class Pair <A,B> {

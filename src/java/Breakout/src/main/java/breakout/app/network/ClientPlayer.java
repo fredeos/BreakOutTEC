@@ -1,10 +1,10 @@
-package breakout.app.modules.clients;
+package breakout.app.network;
 
 import java.io.*;
 import java.net.Socket;
 
-import breakout.app.modules.patterns.*;
-import breakout.app.modules.data_structures.LinkedList; 
+import breakout.app.Structures.LinkedList;
+import breakout.app.network.observer.*; 
 
 public class ClientPlayer extends Client implements Publisher {
 
@@ -13,7 +13,6 @@ public class ClientPlayer extends Client implements Publisher {
     public ClientPlayer(Socket client){
         this.socket = client;
         this.subscribers = new LinkedList();
-
         try {
             this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
             this.out = new PrintWriter(this.socket.getOutputStream());

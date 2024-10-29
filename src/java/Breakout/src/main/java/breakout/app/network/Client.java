@@ -1,4 +1,4 @@
-package breakout.app.modules.clients;
+package breakout.app.network;
 
 import java.io.*;
 import java.net.*;

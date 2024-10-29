@@ -2,10 +2,9 @@ package breakout.app;
 //      _____________________________
 //_____/ Librerias
 
-//      _____________________________
-//_____/ Modulos
-import breakout.app.modules.Server;
 import java.io.*;
+
+import breakout.app.network.Server;
 
 public class Program {
     public static void main( String[] args ) {

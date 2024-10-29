@@ -1,6 +1,5 @@
-package breakout.app.modules.patterns;  
+package breakout.app.network.observer;  
 
 public interface Subscriber {
-
     public void update(Object status);
 }

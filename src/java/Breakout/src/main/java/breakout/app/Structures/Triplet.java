@@ -1,4 +1,4 @@
-package breakout.app.modules.data_structures;
+package breakout.app.Structures;
 
 public class Triplet <A, B, C> {
     private final A first;

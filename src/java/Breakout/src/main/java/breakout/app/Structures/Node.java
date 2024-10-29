@@ -1,4 +1,4 @@
-package breakout.app.modules.data_structures;
+package breakout.app.Structures;
 
 /* Clase para creacion de nodos necesarios en estructuras de datos lineales.
  * Atributos de la clase:

@@ -1,10 +1,10 @@
-package breakout.app.modules;
+package breakout.app.network;
 
-import breakout.app.modules.data_structures.CircularList;
-import breakout.app.modules.data_structures.LinkedList;
-import breakout.app.modules.clients.*;
 import java.io.*;
 import java.net.*;
+
+import breakout.app.Structures.CircularList;
+import breakout.app.Structures.LinkedList;
 
 /* Clase para crear un servidor por medio de sockets TCP
  * Maneja las conexiones con todos los clientes
@@ -22,7 +22,7 @@ public class Server {
     // ------------------------------[ Metodos ]------------------------------
     /* Metodo constructor de la clase servidor
      * @param PORT: 
-     * @param
+     * @param IP
      * @returns
     */
     public Server(int PORT, String IP) throws IOException{

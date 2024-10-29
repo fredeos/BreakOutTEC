@@ -1,11 +1,12 @@
-package breakout.app.modules.clients;
+package breakout.app.network;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import breakout.app.modules.patterns.Subscriber; 
+
+import breakout.app.network.observer.Subscriber; 
 
 public class ClientSpectator extends Client implements Subscriber {
 

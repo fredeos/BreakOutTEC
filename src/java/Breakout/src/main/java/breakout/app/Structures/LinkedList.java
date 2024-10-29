@@ -1,4 +1,4 @@
-package breakout.app.modules.data_structures; 
+package breakout.app.Structures; 
 
 /* Clase para una lista enlazada bidireccional 
  * 

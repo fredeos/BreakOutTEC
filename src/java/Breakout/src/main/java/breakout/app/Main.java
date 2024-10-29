@@ -1,8 +1,8 @@
 package breakout.app;
 
-import breakout.app.modules.data_structures.CircularList;
+import breakout.app.Structures.CircularList;
 
-public class Tests {
+public class Main {
     public static void main( String[] args ) {
         CircularList lista = new CircularList();
             lista.insert(31);

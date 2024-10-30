@@ -5,10 +5,13 @@ import java.net.*;
 
 public class Client {
 
-    protected String identifier;
+    public String identifier;
+    public String username;
+    
     protected Socket socket;
     protected BufferedReader in;
     protected PrintWriter out;
+    protected boolean standby = true;
 
     protected String message;
     protected String received;
@@ -25,6 +28,10 @@ public class Client {
 
     public synchronized void changeOutput(String content){
         this.message = content;
+    }
+
+    public synchronized void continue_(){
+        this.standby = false;
     }
 
     public synchronized void terminate() throws IOException{

@@ -2,17 +2,20 @@ package breakout.app.network;
 
 import java.io.*;
 import java.net.Socket;
+import breakout.app.Controller.SessionController;
 
 import breakout.app.Structures.LinkedList;
-import breakout.app.network.observer.*; 
+import breakout.app.network.observer.*;
 
 public class ClientPlayer extends Client implements Publisher {
 
     private LinkedList subscribers;
 
-    public ClientPlayer(Socket client){
+    public ClientPlayer(Socket client, String id, String name){
         this.socket = client;
         this.subscribers = new LinkedList();
+        this.identifier = id;
+        this.username = name;
         try {
             this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
             this.out = new PrintWriter(this.socket.getOutputStream());

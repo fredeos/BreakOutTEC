@@ -12,9 +12,11 @@ public class ClientSpectator extends Client implements Subscriber {
 
     private ClientPlayer target;
     
-    public ClientSpectator(Socket client, ClientPlayer target){
+    public ClientSpectator(Socket client, ClientPlayer target, String id, String name){
         this.socket = client;
         this.target = target;
+        this.identifier = id;
+        this.username = name;
         if (this.target != null){
             this.target.subscribe(this);
         }

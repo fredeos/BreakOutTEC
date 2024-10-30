@@ -1,5 +1,11 @@
 package breakout.app.GameObjects;
 
-public class PowerUp {
+import org.json.JSONObject; 
 
+public abstract class PowerUp {
+    protected JSONObject description;
+
+    public String getDescription(){
+        return this.description.toString();
+    }
 }

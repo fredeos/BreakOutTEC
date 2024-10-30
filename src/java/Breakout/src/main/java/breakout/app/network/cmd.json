@@ -1,0 +1,16 @@
+{
+    "EJ(inicio de conexion)": 
+    {
+        "id":"*uuid*",
+        "name": "client",
+        "type": "player/spectator",
+        "request": "connect"
+    },
+    "EJ(respuesta incial servidor)": 
+    {
+        "code": 100,
+        "response":"standby/approved",
+        "description": "wait"
+    },
+    "EJ(Peticion)": {}
+}

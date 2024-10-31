@@ -1,4 +1,4 @@
-package breakout.App;
+package breakout.app;
 
 import junit.framework.Test;
 import junit.framework.TestCase;

@@ -1,4 +1,5 @@
-package breakout.app;
+package breakout.app.View;
+
 //      _____________________________
 //_____/ Librerias
 import javafx.application.Application;
@@ -7,7 +8,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
-public class Interface extends Application {
+public class HomeWindow extends Application {
+
     @Override
     public void start(Stage primaryStage) {
         // Create a label

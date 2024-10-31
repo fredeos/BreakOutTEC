@@ -28,6 +28,11 @@ public class ClientSpectator extends Client implements Subscriber {
         }
     }
 
+    @Override
+    public synchronized void setResponse(String key){
+        
+    }
+
     public synchronized void changeTarget(ClientPlayer newTarget){
         if (this.target != null){
             this.target.unsubscribe(this);

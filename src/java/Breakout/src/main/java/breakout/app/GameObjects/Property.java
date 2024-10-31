@@ -6,6 +6,5 @@ public enum Property {
     SPEED,
     COLOR,
     POWER,
-    POSITION,
-    ANGLE
+    POSITION
 };

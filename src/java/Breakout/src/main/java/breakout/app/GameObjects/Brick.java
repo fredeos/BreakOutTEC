@@ -1,5 +1,6 @@
 package breakout.app.GameObjects;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class Brick extends GameObject {
@@ -7,12 +8,23 @@ public class Brick extends GameObject {
     private PowerUp contained;
     private int durability;
     private String color;
+    private int[] matrix_position;
 
-    public Brick(int durability, String color){
+    public Brick(int durability, String color, int i, int j){
+        this.durability = durability;
+        this.color = color;
+        this.matrix_position[0] = i;
+        this.matrix_position[1] = j;
+        
         this.content = new JSONObject();
-        this.content.append("powerup", null);
-        this.content.append("durability", durability);
-        this.content.append("color", color);
+            this.content.put("powerup", "none");
+            this.content.put("durability", this.durability);
+            this.content.put("color", this.color);
+            
+        JSONArray position = new JSONArray();
+        position.put(this.matrix_position[0]);
+        position.put(this.matrix_position[1]);
+            this.content.put("position", position.toString());
     }
 
     public void setPowerUp(PowerUp pUp){
@@ -38,10 +50,14 @@ public class Brick extends GameObject {
     public synchronized void updateContent(Property property){
         switch (property) {
             case POWER:
-                this.content.append("powerup", this.contained.description.toString());
+                if (this.contained == null){
+                    this.content.put("powerup", "none");
+                } else {
+                    this.content.put("powerup", this.contained.description.toString());
+                }
                 break;
             case DURABILITY:
-                this.content.append("durability", this.durability);
+                this.content.put("durability", this.durability);
                 break;
         }
     }

@@ -1,16 +1,76 @@
 {
-    "EJ(inicio de conexion)": 
-    {
-        "id":"*uuid*",
-        "name": "client",
-        "type": "player/spectator",
-        "request": "connect"
+    "Ejemplos.Respuestas.Servidor":{
+        "R.inicio de conecion": {
+            "code": 100,
+            "request": "connection",
+            "response": "standby/approved/rejected",
+            "description": "wait/start/end"
+        },
+        "R.inicio de juego": {}
     },
-    "EJ(respuesta incial servidor)": 
-    {
-        "code": 100,
-        "response":"standby/approved",
-        "description": "wait"
+    "Ejemplos.Petciones.Jugador":{
+        "inicio de conexion": {
+            "id":"*uuid*",
+            "name": "client",
+            "type": "player",
+            "request": "connect"
+        },
+        "inicio de juego":{
+            "id":"*uuid*",
+            "name": "client",
+            "request": "init"
+        },
+        "update": {
+            "id": "*uuid*",
+            "name": "client",
+            "type": "player",
+            "request": "update-game",
+            "action": "move-[ball/racket]/strike-brick/apply-powerup",
+            "attach": "*lista de objetos o objeto en especifico*"
+        }
     },
-    "EJ(Peticion)": {}
+    "Ejemplos.Peticiones.Espectador":{
+        "inicio de conexion": {
+            "id":"*uuid*",
+            "name": "client",
+            "type": "spectator",
+            "request": "connect"
+        },
+        "update": {
+            "id": "*uuid*",
+            "name": "client",
+            "type": "spectator",
+            "request": "update-game"
+        },
+        "change": {
+            "id": "*uuid*",
+            "name": "client",
+            "type": "spectator",
+            "request": "change-spectated",
+            "target": "next/prev"
+        }
+    },
+    "Ejemplos.Formatos.Objetos":{
+        "bola": {
+            "id": "1ug1ge17dd",
+            "position": [50.0, 50.0],
+            "speed": 1.0
+        },
+        "ladrillo": {
+            "powerup": "none",
+            "durability": 1,
+            "color": "green",
+            "position": [1,1]
+        },
+        "raqueta":{
+            "position": [50.0, 50.0],
+            "size": 1.0,
+            "speed": 1.0
+        },
+        "powerups":{
+            "category":"ball/racket",
+            "modifier": "speed/size/quantity",
+            "value": "puede ser flotante o entero"
+        }
+    }
 }

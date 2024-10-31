@@ -2,6 +2,7 @@ package breakout.app.network;
 
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.Semaphore;
 
 public class Client {
 
@@ -15,34 +16,66 @@ public class Client {
 
     protected String message;
     protected String received;
+    protected Semaphore mutex = new Semaphore(1);
 
     public String read() throws IOException{
-        this.received = this.in.readLine();
+        try {
+            mutex.acquire();
+            this.received = this.in.readLine();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            mutex.release();
+        }
         return this.received;
     }
 
     public void send() throws IOException{
-        this.out.println(message);
-        this.out.flush();
+        try {
+            mutex.acquire();
+            this.out.println(message);
+            this.out.flush();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public String checkOutput(){
+        return this.message;
     }
 
     public synchronized void changeOutput(String content){
-        this.message = content;
+        try {
+            mutex.acquire();
+            this.message = content;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            mutex.release();
+        }
     }
 
     public synchronized void continue_(){
         this.standby = false;
     }
 
+    public synchronized void setResponse(String key) {}
+
     public synchronized void terminate() throws IOException{
-        if (!this.socket.isClosed()){
-            this.socket.close();
-            this.in.close();
-            this.out.close();
+        try {
+            mutex.acquire();
+            if (!this.socket.isClosed()){
+                this.socket.close();
+                this.in.close();
+                this.out.close();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            mutex.release();
         }
     }
 
-    public String getID(){
-        return this.identifier;
-    }
 }

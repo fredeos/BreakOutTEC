@@ -1,4 +1,4 @@
-package java.breakout-server.src.main.java.breakout.App.modules;
+package breakout.App.modules;
 
 public class Server {
     

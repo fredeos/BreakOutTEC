@@ -4,6 +4,7 @@
 #include <unistd.h>        // For close()
 #include <arpa/inet.h>     // For inet_addr()
 #include <sys/socket.h>    // For socket functions
+#include <uuid/uuid.h>
 
 /// @brief A
 struct container{
@@ -14,8 +15,9 @@ struct container{
 /// @brief 
 struct client{
     struct container sock_container;
-    char INbuffer[1024];
+    char INbuffer[2048];
     char *OUTbuffer;
+    char uuid[37];
 };
 
 /// @brief Inicializa un socket TCP dentro de un contenedor

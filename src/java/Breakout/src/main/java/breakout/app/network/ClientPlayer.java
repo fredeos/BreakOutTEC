@@ -4,7 +4,7 @@ import java.io.*;
 import java.net.Socket;
 
 import org.json.JSONArray;
-import org.json.JSONObject; 
+import org.json.JSONObject;
 
 import breakout.app.Controller.SessionController;
 
@@ -31,11 +31,6 @@ public class ClientPlayer extends Client implements Publisher {
     }
 
     @Override
-    public synchronized void setResponse(String key){
-
-    }
-
-    @Override
     public synchronized void continue_(){
         this.standby = false;
         this.session = new SessionController(this);
@@ -44,17 +39,21 @@ public class ClientPlayer extends Client implements Publisher {
 
     public synchronized void process(){
         JSONObject json = new JSONObject(this.received);
-        JSONObject response = new JSONObject();
+        JSONObject response = new JSONObject(); 
         switch (json.getString("request")) {
             case "init":
                 response.put("code", 100);
                 response.put("request", "initiate-game");
-                response.put("attach", this.session.getSessionInformation());
+                response.put("response", "session-created");
+                json.put("description", "new-game");
+                response.put("attach", "nada xd");
                 break;
             case "update-game":
                 String action = json.getString("action");
                 response.put("code", 100);
                 response.put("request", "update-game");
+                response.put("response", "session-updated-succesfully");
+                json.put("description", "data-updated");
                 response.put("action", action);
                 if (action == "move-ball"){
                     JSONArray balls = json.getJSONArray("attach");

@@ -30,6 +30,10 @@ public class Server {
     public Server(int PORT, String IP) throws IOException{
         InetAddress address = InetAddress.getByName(IP);
         this.socket = new ServerSocket(PORT, 0, address);
+        this.pending = new LinkedList();
+        this.clientlist = new LinkedList();
+        this.playerlist = new CircularList();
+
         System.out.println("Servidor activo!");
         System.out.println(PORT);
         System.out.println(IP);
@@ -50,6 +54,8 @@ public class Server {
                     
                     BufferedReader input = new BufferedReader(new InputStreamReader(client.getInputStream()));
                     String message = input.readLine();
+                    System.out.println(message);
+
                     JSONObject startup = new JSONObject(message);
                     String type = startup.getString("type");
 
@@ -59,18 +65,18 @@ public class Server {
                         this.clientlist.insert(new_client);
                         this.playerlist.insert(new_client);
                         this.pending.insert(new_client);
-                        new_client.changeOutput(this.prepareResponse("on_standby"));
+                        System.out.println("Clients on hold:"+this.pending.size);
+                        new_client.changeOutput(this.prepareResponse("on-standby"));
                         this.openPlayerChannel((ClientPlayer)new_client);
                     } else {
                         new_client = new ClientSpectator(client, null, startup.getString("id"), startup.getString("name"));
                         this.clientlist.insert(new_client);
                         this.pending.insert(new_client);
-                        new_client.changeOutput(this.prepareResponse("on_standby"));
+                        new_client.changeOutput(this.prepareResponse("on-standby"));
                         this.openSpectatorChannel((ClientSpectator)new_client);
                     }
-                    this.approveClient(0); // Esto se borra despues, es solo para probar
-                } catch (IOException e) {
-                    System.err.println(e);
+                } catch (IOException e1) {
+                    System.err.println(e1);
                     break;
                 }
             } while (this.isActive());
@@ -87,17 +93,29 @@ public class Server {
                     client.send();
                     if(!client.standby){
                         String receivedmsg = client.read();
+                        System.out.println(receivedmsg);
                         JSONObject json = new JSONObject(receivedmsg);
                         switch (json.getString("request")) {
-                            case "closing":
+                            case "end-connection":
+                                client.changeOutput(this.prepareResponse("end-connection"));
+                                client.send();
+                                client.terminate();
                                 break loop;
+                            case "no-update":
+                                client.changeOutput(this.prepareResponse("no-update"));
+                                break;
+                            case "on-standby":
+                                client.changeOutput(this.prepareResponse("on-standby"));
+                                break;
                             default:
                                 client.process();
                                 break;
                         }
+                    } else {
+                        this.approveClient(0);
                     }
                 } catch (IOException e) {
-                    // TODO: handle exception
+                    System.err.println(e);
                 }
             }
         });
@@ -132,7 +150,7 @@ public class Server {
         String jsonresponse = "";
         JSONObject json = new JSONObject();
         switch (request) {
-            case "on_standby":
+            case "on-standby":
                 json.put("code", 100);
                 json.put("request", "connection");
                 json.put("response", "standby");
@@ -150,9 +168,17 @@ public class Server {
                 json.put("response", "rejected");
                 json.put("description", "end");
                 break;
-            case "closing":
-                json.put("code", 400);
+            case "end-connection":
+                json.put("code", 100);
+                json.put("request", "end-connection");
+                json.put("response", "closing");
+                json.put("description", "end");
                 break;
+            case "no-update":
+                json.put("code", 100);
+                json.put("request", "no-update");
+                json.put("response", "standby");
+                json.put("description", "wait");
             default:
                 break;
         }
@@ -175,7 +201,7 @@ public class Server {
     }
 
     /* Verifica que el servidor aun este activo*/
-    private boolean isActive(){
+    public boolean isActive(){
         return this.active;
     }
 

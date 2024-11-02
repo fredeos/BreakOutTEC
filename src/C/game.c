@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-
 #define ANCHO_VENTANA 600
 #define ALTO_VENTANA 600
 #define ANCHO_PLATAFORMA 100

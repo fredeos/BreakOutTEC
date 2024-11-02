@@ -1,3 +1,0 @@
-/home/erick/Documents/Tec/Paradigmas/gtk_proyect/cmake-build-debug/CMakeFiles/gtk_project.dir
-/home/erick/Documents/Tec/Paradigmas/gtk_proyect/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/erick/Documents/Tec/Paradigmas/gtk_proyect/cmake-build-debug/CMakeFiles/rebuild_cache.dir

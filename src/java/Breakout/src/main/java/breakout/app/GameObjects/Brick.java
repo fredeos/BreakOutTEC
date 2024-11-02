@@ -13,6 +13,7 @@ public class Brick extends GameObject {
     public Brick(int durability, String color, int i, int j){
         this.durability = durability;
         this.color = color;
+        this.matrix_position = new int[2];
         this.matrix_position[0] = i;
         this.matrix_position[1] = j;
         

@@ -61,8 +61,6 @@ public class Client {
         this.standby = false;
     }
 
-    public synchronized void setResponse(String key) {}
-
     public synchronized void terminate() throws IOException{
         try {
             mutex.acquire();

@@ -23,7 +23,6 @@
         "update": {
             "id": "*uuid*",
             "name": "client",
-            "type": "player",
             "request": "update-game",
             "action": "move-[ball/racket]/strike-brick/apply-powerup",
             "attach": "*lista de objetos o objeto en especifico*"

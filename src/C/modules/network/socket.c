@@ -33,6 +33,8 @@ struct client *create_client(int port, char *server_ip){
         printf("ERROR: No se pudo asignar memoria para un nuevo cliente\n");
         return NULL;
     }
+    uuid_t UUID;
+    uuid_unparse(UUID,instance->uuid);
     initialize(&instance->sock_container, port, server_ip);
     start_connect(&instance->sock_container);
     return instance;

@@ -1,4 +1,4 @@
-package breakout.app.Structures; 
+package breakout.app.Structures;  
 
 /* Clase para una lista enlazada bidireccional 
  * 
@@ -14,6 +14,7 @@ public class LinkedList {
         this.tail = null;
         this.size = 0;
     }
+
     /* Obtiene el nodo cabezal de la lista*/
     public synchronized Node getHead(){
         return this.head;
@@ -85,12 +86,18 @@ public class LinkedList {
         if (match){
             Node prev = current.getPrev();
             Node next = current.getNext();
-                if (prev != null){
-                    prev.setNext(next);
-                }
-                if (next != null){
-                    next.setPrev(prev);
-                }
+            if (prev != null){
+                prev.setNext(next);
+            }
+            if (next != null){
+                next.setPrev(prev);
+            }
+            if (current == this.head){
+                this.head = next;
+            }
+            if (current == this.tail){
+                this.tail = prev;
+            }
             current.setNext(null);
             current.setPrev(null);
             this.size --;

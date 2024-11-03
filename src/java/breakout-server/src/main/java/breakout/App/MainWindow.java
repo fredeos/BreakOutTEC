@@ -27,17 +27,17 @@ public class MainWindow extends Application {
 
         // Labels para IP y puerto
         Label ipLabel = new Label("IP:");
-        ipLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); // Aumentar tamaño de letra de "IP"
+        ipLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); 
         
         
         Label ipValueLabel = new Label(ipValue); // Etiqueta para el valor de la IP
-        ipValueLabel.setStyle("-fx-font-size: 14px;"); // Aumentar tamaño de letra del valor de la IP
+        ipValueLabel.setStyle("-fx-font-size: 14px;"); 
         
         Label portLabel = new Label("Port:");
-        portLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); // Aumentar tamaño de letra de "Port"
+        portLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); 
         
         Label portValueLabel = new Label(portValue); // Etiqueta para el valor del puerto
-        portValueLabel.setStyle("-fx-font-size: 14px;"); // Aumentar tamaño de letra del valor del puerto
+        portValueLabel.setStyle("-fx-font-size: 14px;"); 
 
         // Botón ON/OFF
         Button onOffButton = new Button("ON/OFF");
@@ -85,7 +85,9 @@ public class MainWindow extends Application {
         // Acciones para los botones
         acceptButton.setOnAction(event -> {
             System.out.println("Cliente aceptado");
-            // Lo que de los sockets
+            SecondWindow SecondWindow= new SecondWindow();
+            SecondWindow.display();
+
         });
 
         rejectButton.setOnAction(event -> {

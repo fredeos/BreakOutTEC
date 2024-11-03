@@ -5,19 +5,31 @@
 #include <json-c/json.h>
 #include "modules/network/socket.h"
 
+typedef enum client_type {
+    PLAYER,
+    SPECTATOR
+};
+
+// --> Configuracion inicial del socket
+// Atributos auxiliares para el socket
+int online = 1;
+enum client_type ct = PLAYER;
+
 int main(){
     struct client* cliente = create_client(8080, "127.0.0.1");
+    struct json_object* out;
+    struct json_object* in;
 
     int online = 1;
     int startup = 1;
     while (online == 1){
-        struct json_object *out = json_object_new_object();
+        out = json_object_new_object();
         json_object_object_add(out, "id", json_object_new_string(cliente->uuid));
         json_object_object_add(out, "name", json_object_new_string("pepe"));
         json_object_object_add(out, "type", json_object_new_string("player"));
         if (startup == 0){
             receive_message(cliente);
-            struct json_object* in = json_tokener_parse(cliente->INbuffer);
+            in = json_tokener_parse(cliente->INbuffer);
             const char* response = json_object_get_string(json_object_object_get(in,"response"));
             int code = json_object_get_int(json_object_object_get(in,"code"));
             if (code >= 100 && code < 200){

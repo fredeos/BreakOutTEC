@@ -21,9 +21,9 @@ public class Ball extends GameObject {
         JSONArray Vposition = new JSONArray();
             Vposition.put(this.position[0]);
             Vposition.put(this.position[1]);
-        this.content.append("id", this.id);
-        this.content.append("position", Vposition.toString());
-        this.content.append("speed", this.speed);
+        this.content.put("id", this.id);
+        this.content.put("position", Vposition);
+        this.content.put("speed", this.speed);
     }
 
     public synchronized void move(float newX, float newY){
@@ -50,7 +50,7 @@ public class Ball extends GameObject {
                 JSONArray Vposition = new JSONArray();
                     Vposition.put(this.position[0]);
                     Vposition.put(this.position[1]);
-                this.content.put("position", Vposition.toString());
+                this.content.put("position", Vposition);
                 break;
             case SPEED:
                 this.content.put("speed", this.speed);

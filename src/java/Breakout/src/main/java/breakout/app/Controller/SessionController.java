@@ -40,7 +40,7 @@ public class SessionController {
         this.session.racket = new Racket(50.f, 50.f);
     }
 
-    public synchronized String getSessionInformation(){
+    public synchronized JSONObject getSessionInformation(){
         JSONObject game = new JSONObject();
         // Obtener todos los ladrillos
         JSONObject bricks = new JSONObject();
@@ -50,18 +50,18 @@ public class SessionController {
                 Brick brick = this.session.bricks[i][j];
                 layer.put(brick.getContent());
             }
-            bricks.put("layer"+i, layer.toString());
+            bricks.put("layer"+i, layer);
         }
-        game.put("bricks",bricks.toString());
+        game.put("bricks",bricks);
         // Obtener todas las bolas
         JSONArray balls = new JSONArray();
         for (int i = 0; i < this.session.balls.size; i++){
             Ball ball = (Ball)this.session.balls.get(i);
             balls.put(ball.getContent());
         }
-        game.put("balls",balls.toString());
+        game.put("balls",balls);
         game.put("racket", this.session.racket.getContent());
-        return game.toString();
+        return game;
     }
 
     public synchronized void setBrickPowerUp(String powerup, int i, int j){

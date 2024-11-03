@@ -18,7 +18,7 @@ public class Racket extends GameObject {
             Vposition.put(this.position[0]);
             Vposition.put(this.position[1]);
         
-        this.content.put("position", Vposition.toString());
+        this.content.put("position", Vposition);
         this.content.put("size", this.size);
         this.content.put("speed", this.speed);
     }
@@ -46,7 +46,7 @@ public class Racket extends GameObject {
                 JSONArray Vposition = new JSONArray();
                     Vposition.put(this.position[0]);
                     Vposition.put(this.position[1]);
-                this.content.put("position", Vposition.toString());
+                this.content.put("position", Vposition);
                 break;
             case SPEED:
                 this.content.put("speed", this.speed);

@@ -4,7 +4,7 @@ import java.io.*;
 import java.net.Socket;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
+import org.json.JSONObject; 
 
 import breakout.app.Controller.SessionController;
 
@@ -46,7 +46,7 @@ public class ClientPlayer extends Client implements Publisher {
                 response.put("request", "initiate-game");
                 response.put("response", "session-created");
                 json.put("description", "new-game");
-                response.put("attach", "nada xd");
+                response.put("attach", this.session.getSessionInformation()); 
                 break;
             case "update-game":
                 String action = json.getString("action");

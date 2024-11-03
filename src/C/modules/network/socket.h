@@ -15,7 +15,7 @@ struct container{
 /// @brief 
 struct client{
     struct container sock_container;
-    char INbuffer[2048];
+    char INbuffer[20480];
     char *OUTbuffer;
     char uuid[37];
 };

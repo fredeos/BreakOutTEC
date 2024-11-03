@@ -7,7 +7,7 @@ public abstract class GameObject {
 
     protected abstract void updateContent(Property property);
 
-    public String getContent(){
-        return this.content.toString();
+    public JSONObject getContent(){
+        return this.content;
     }
 };

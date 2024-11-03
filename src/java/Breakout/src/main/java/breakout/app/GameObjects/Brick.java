@@ -25,7 +25,7 @@ public class Brick extends GameObject {
         JSONArray position = new JSONArray();
         position.put(this.matrix_position[0]);
         position.put(this.matrix_position[1]);
-            this.content.put("position", position.toString());
+            this.content.put("position", position);
     }
 
     public void setPowerUp(PowerUp pUp){
@@ -54,7 +54,7 @@ public class Brick extends GameObject {
                 if (this.contained == null){
                     this.content.put("powerup", "none");
                 } else {
-                    this.content.put("powerup", this.contained.description.toString());
+                    this.content.put("powerup", this.contained.description);
                 }
                 break;
             case DURABILITY:

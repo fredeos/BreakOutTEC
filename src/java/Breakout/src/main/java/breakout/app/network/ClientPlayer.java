@@ -6,7 +6,7 @@ import java.net.Socket;
 import org.json.JSONArray;
 import org.json.JSONObject; 
 
-import breakout.app.Controller.SessionController;
+import breakout.app.Controller.SessionController; 
 
 import breakout.app.Structures.LinkedList;
 import breakout.app.network.observer.*;
@@ -45,39 +45,67 @@ public class ClientPlayer extends Client implements Publisher {
                 response.put("code", 100);
                 response.put("request", "initiate-game");
                 response.put("response", "session-created");
-                json.put("description", "new-game");
+                response.put("description", "new-game");
                 response.put("attach", this.session.getSessionInformation()); 
                 break;
             case "update-game":
-                String action = json.getString("action");
+                String[] parameters = json.getString("action").split(":");
+                String action = parameters[0];
+
                 response.put("code", 100);
                 response.put("request", "update-game");
-                response.put("response", "session-updated-succesfully");
-                json.put("description", "data-updated");
+                response.put("response", "session-updated");
+                response.put("description", "data-updated");
                 response.put("action", action);
-                if (action == "move-ball"){
-                    JSONArray balls = json.getJSONArray("attach");
-                    for (int i = 0; i < balls.length(); i++){
-                        JSONObject ball = balls.getJSONObject(i);
-                        JSONArray position = ball.getJSONArray("position");
-                        this.session.moveBall(ball.getString("id"), position.getFloat(0), position.getFloat(1));
-                    }
-                } else if (action == "move-racket"){
+                if (action.equals("move-ball")){
+                    JSONObject ball = json.getJSONObject("attach");
+                    JSONArray position = json.getJSONArray("position");
+                    this.session.moveBall(ball.getInt("id"), position.getInt(0), position.getInt(1));
+                } else if (action.equals("move-racket")){
                     JSONObject racket = json.getJSONObject("attach");
                     JSONArray position = racket.getJSONArray("position");
-                    this.session.moveRacket(position.getFloat(0), position.getFloat(1));
-                } else if (action == "strike-brick"){
+                    this.session.moveRacket(position.getInt(0), position.getInt(1));
+                } else if (action.equals("strike-brick")){
                     JSONObject brick = json.getJSONObject("attach");
                     JSONArray position = brick.getJSONArray("position");
                     this.session.registerHitOnBrick(position.getInt(0), position.getInt(1));
-                    if (this.session.changes != "none"){
-                        response.put("changes", true);
-                        response.put("attach", this.session.changes);
-                    } else {
-                        response.put("changes", false);
+                } else if (action.equals("rm-ball")){
+                    JSONObject ball = json.getJSONObject("attach");
+                    this.session.deleteBall(ball.getInt("id"));
+                } else { // Caso de apply-powerup
+                    String powerup_type = parameters[1];
+                    if (powerup_type.equals("add-life")){
+                        int total_life = json.getInt("attach");
+                        this.session.increaseLife(total_life);
+                    } else if (powerup_type.equals("add-ball")){
+                        JSONObject new_ball = json.getJSONObject("attach");
+                        JSONArray position = new_ball.getJSONArray("position");
+                        this.session.addNewBall(new_ball.getInt("id"), position.getInt(0),position.getInt(1));
+                    } else if (powerup_type.equals("increase-ball-speed")){
+                        int speed = json.getInt("attach");
+                        this.session.increaseBallSpeed(speed);
+                    } else if (powerup_type.equals("increase-racket-speed")){
+                        int speed = json.getInt("attach");
+                        this.session.increaseRacketSpeed(speed);
+                    } else if (powerup_type.equals("increase-racket-size")){
+                        int size = json.getInt("attach");
+                        this.session.increaseRacketSize(size);
                     }
-                    this.session.changes = "none";
                 }
+                // Obtener los cambios del hechos en la sesion
+                if (this.session.getServerChanges().isEmpty()){
+                    response.put("byserver",false);
+                } else {
+                    response.put("byserver",true);
+                    response.put("server-changes",this.session.getServerChanges());
+                }
+                if (this.session.getClientChanges().isEmpty()){
+                    response.put("byclient",false);
+                } else {
+                    response.put("byclient",true);
+                    response.put("client-changes",this.session.getClientChanges());
+                }
+                break;
             default:
                 break;
         }

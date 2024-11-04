@@ -5,15 +5,6 @@
 #include <json-c/json.h>
 #include "modules/network/socket.h"
 
-typedef enum client_type {
-    PLAYER,
-    SPECTATOR
-};
-
-// --> Configuracion inicial del socket
-// Atributos auxiliares para el socket
-int online = 1;
-enum client_type ct = PLAYER;
 
 int main(){
     struct client* cliente = create_client(8080, "127.0.0.1");

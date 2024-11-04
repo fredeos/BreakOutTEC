@@ -5,11 +5,11 @@ import org.json.JSONObject;
 
 public class Racket extends GameObject {
     
-    private float[] position = { 0.0f, 0.0f};
-    private double size = 1.0;
-    private float speed = 1.0f;
+    private int[] position = { 0, 0};
+    private int size = 1;
+    private int speed = 1;
 
-    public Racket(float X, float Y){
+    public Racket(int X, int Y){
         this.position[0] = X;
         this.position[1] = Y;
 
@@ -23,18 +23,18 @@ public class Racket extends GameObject {
         this.content.put("speed", this.speed);
     }
 
-    public synchronized void move(float newX, float newY){
+    public synchronized void move(int newX, int newY){
         this.position[0] = newX;
         this.position[1] = newY;
         this.updateContent(Property.POSITION);
     }
 
-    public synchronized void setSize(double newSize){
+    public synchronized void setSize(int newSize){
         this.size = newSize;
         this.updateContent(Property.SIZE);
     }
 
-    public synchronized void setSpeed(float newSpeed){
+    public synchronized void setSpeed(int newSpeed){
         this.speed = newSpeed;
         this.updateContent(Property.SPEED);
     }

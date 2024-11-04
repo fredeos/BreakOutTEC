@@ -11,12 +11,11 @@ CUUID = -luuid
 CJSON = -ljson-c
 
 client:
-	${CC} `pkg-config --cflags gtk+-3.0` -o ./C/out/$@ ./C/game.c `pkg-config --libs gtk+-3.0`
+	${CC} ${NET} ${I} ${L} `pkg-config --cflags gtk+-3.0` -o ./C/out/$@ ./C/game.c `pkg-config --libs gtk+-3.0` ${CUUID} ${CJSON}
 	./C/out/$@
 
 java_compile:
 	cd java/Breakout; mvn compile
-
 c_tests:
 	${CC} ${NET} ${I} ${L} -o ./C/out/$@ ./C/test.c ${CUUID} ${CJSON}
 	./C/out/$@

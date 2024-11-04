@@ -24,7 +24,8 @@
             "id": "*uuid*",
             "name": "client",
             "request": "update-game",
-            "action": "move-[ball/racket]/strike-brick/apply-powerup",
+            "score": 10,
+            "action": "move-[ball/racket]/strike-brick/rm-ball/apply-powerup:[poder]",
             "attach": "*lista de objetos o objeto en especifico*"
         }
     },
@@ -52,8 +53,8 @@
     "Ejemplos.Formatos.Objetos":{
         "bola": {
             "id": "1ug1ge17dd",
-            "position": [50.0, 50.0],
-            "speed": 1.0
+            "position": [50, 50],
+            "speed": 1
         },
         "ladrillo": {
             "powerup": "none",
@@ -62,14 +63,14 @@
             "position": [1,1]
         },
         "raqueta":{
-            "position": [50.0, 50.0],
-            "size": 1.0,
-            "speed": 1.0
+            "position": [50, 50],
+            "size": 1,
+            "speed": 1
         },
         "powerups":{
-            "category":"ball/racket",
+            "category":"ball/racket/life",
             "modifier": "speed/size/quantity",
-            "value": "puede ser flotante o entero"
+            "value": 2
         }
     }
 }

@@ -33,6 +33,10 @@ public class Brick extends GameObject {
         this.updateContent(Property.POWER);
     }
 
+    public PowerUp getPowerUp(){
+        return this.contained;
+    }
+
     public PowerUp strike(){
         if (this.durability > 0){
             this.durability --;
@@ -48,7 +52,7 @@ public class Brick extends GameObject {
     }
 
     @Override
-    public synchronized void updateContent(Property property){
+    protected synchronized void updateContent(Property property){
         switch (property) {
             case POWER:
                 if (this.contained == null){

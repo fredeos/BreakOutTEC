@@ -7,7 +7,7 @@ import org.json.JSONArray;
 
 public class Ball extends GameObject {
 
-    private int id;
+    public int id;
     private int[] position = {0, 0};
     private int speed = 1;
 

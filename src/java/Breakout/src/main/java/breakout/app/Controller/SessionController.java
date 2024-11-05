@@ -129,7 +129,7 @@ public class SessionController {
         for (int i = 0; i < this.session.balls.size; i++){
             Ball ball = (Ball)this.session.balls.get(i);
             JSONObject data = new JSONObject(ball.getContent());
-            if (data.getInt("id") == id){
+            if (ball.id == id){
                 ball.move(x,y);
                 break;
             }

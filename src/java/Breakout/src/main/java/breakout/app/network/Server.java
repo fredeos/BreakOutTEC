@@ -93,7 +93,7 @@ public class Server {
                     client.send();
                     if(!client.standby){
                         String receivedmsg = client.read();
-                        System.out.println(receivedmsg);
+                        System.out.println("Mensaje del cliente"+receivedmsg);
                         JSONObject json = new JSONObject(receivedmsg);
                         switch (json.getString("request")) {
                             case "end-connection":

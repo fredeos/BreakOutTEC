@@ -1,5 +1,5 @@
 package breakout.app.GameObjects.factory;
-
+ 
 import breakout.app.GameObjects.AddBall;
 import breakout.app.GameObjects.PowerUp;
 import breakout.app.GameObjects.SizeIncrease;
@@ -16,15 +16,15 @@ public class PowerUpFactory {
                 power = new AddBall(quantity);
                 break;
             case "ball_speed":
-                float Bmult = (float)value;
+                int Bmult = (int)value;
                 power = new SpeedIncrease(Bmult, "ball");
                 break;
             case "racket_size":
-                float size_mult = (float)value;
+                int size_mult = (int)value;
                 power = new SizeIncrease(size_mult);
                 break;
             case "racket_speed":
-                float Rmult =  (float)value;
+                int Rmult =  (int)value;
                 power = new SpeedIncrease(Rmult, "racket");
                 break;
             default:

@@ -3,9 +3,11 @@ package breakout.app.network;
 import java.io.*;
 import java.net.*;
 import org.json.*;
+import java.util.concurrent.Semaphore;
 
 import breakout.app.Structures.CircularList;
 import breakout.app.Structures.LinkedList;
+import breakout.app.View.MainWindow;
 
 /* Clase para crear un servidor por medio de sockets TCP
  * Maneja las conexiones con todos los clientes
@@ -18,9 +20,11 @@ public class Server {
     private boolean active;
 
     public LinkedList pending;
-    private LinkedList clientlist;
+    public LinkedList clientlist;
     private CircularList playerlist;
 
+    private MainWindow window;
+    public Semaphore traffic_lock = new Semaphore(1);
     // ------------------------------[ Metodos ]------------------------------
     /* Metodo constructor de la clase servidor
      * @param PORT: 
@@ -39,7 +43,7 @@ public class Server {
         System.out.println(IP);
     }
 
-    /* Abre una sala de espera donde recibe
+    /* Abre una sala de espera donde reciben los clientes
      * 
     */
     public synchronized void turnON(){
@@ -91,31 +95,30 @@ public class Server {
             loop: while (this.isActive()){ 
                 try {
                     client.send();
-                    if(!client.standby){
-                        String receivedmsg = client.read();
-                        System.out.println("Mensaje del cliente"+receivedmsg);
-                        JSONObject json = new JSONObject(receivedmsg);
-                        switch (json.getString("request")) {
-                            case "end-connection":
-                                client.changeOutput(this.prepareResponse("end-connection"));
-                                client.send();
-                                client.terminate();
-                                break loop;
-                            case "no-update":
-                                client.changeOutput(this.prepareResponse("no-update"));
-                                break;
-                            case "on-standby":
-                                client.changeOutput(this.prepareResponse("on-standby"));
-                                break;
-                            default:
-                                client.process();
-                                break;
-                        }
-                    } else {
+                    String receivedmsg = client.read();
+                    System.out.println("Mensaje del cliente"+receivedmsg);
+                    JSONObject json = new JSONObject(receivedmsg);
+                    switch (json.getString("request")) {
+                        case "end-connection":
+                            client.changeOutput(this.prepareResponse("end-connection"));
+                            client.send();
+                            client.terminate();
+                            break loop;
+                        case "no-update":
+                            client.changeOutput(this.prepareResponse("no-update"));
+                            break;
+                        case "on-standby":
+                            client.changeOutput(this.prepareResponse("on-standby"));
+                            break;
+                        default:
+                            client.process();
+                            break;
+                    }
+                    if (client.isOnStandBy()){
                         this.approveClient(0);
                     }
-                } catch (IOException e) {
-                    System.err.println(e);
+                } catch (IOException e1) {
+                    System.err.println(e1);
                     break;
                 }
             }
@@ -187,18 +190,32 @@ public class Server {
         return jsonresponse;
     }
 
-    public void approveClient(int i){
-        Client client = (Client) this.pending.get(i);
-        client.continue_();
-        client.changeOutput(this.prepareResponse("approve"));
-        this.pending.removeContent(client);
+    public synchronized void approveClient(int i){
+        try {
+            this.traffic_lock.acquire();
+            Client client = (Client) this.pending.get(i);
+            client.continue_();
+            client.changeOutput(this.prepareResponse("approve"));
+            this.pending.removeContent(client);
+        } catch (Exception e1) {
+            // TODO: handle exception
+        } finally {
+            this.traffic_lock.release();
+        }
     }
 
-    public void rejectClient(int i){
-        Client client = (Client) this.pending.get(i);
-        client.continue_();
-        client.changeOutput(this.prepareResponse("reject"));
-        this.pending.removeContent(client);
+    public synchronized void rejectClient(int i){
+        try {
+            this.traffic_lock.acquire();
+            Client client = (Client) this.pending.get(i);
+            client.continue_();
+            client.changeOutput(this.prepareResponse("reject"));
+            this.pending.removeContent(client);
+        } catch (Exception e1) {
+            // TODO: handle exception
+        } finally {
+            this.traffic_lock.release();
+        }
     }
 
     /* Verifica que el servidor aun este activo*/
@@ -208,7 +225,24 @@ public class Server {
 
     /* Desactiva la comunicacion del servidor con sus clientes*/
     public synchronized void turnOFF(){
+        try {
+            this.traffic_lock.acquire();
+            while(this.pending.size > 0){
+                Client client = (Client) this.pending.get(0);
+                client.changeOutput(this.prepareResponse("reject"));
+                this.pending.remove(0);
+            }
+            while(this.playerlist.size > 0){
+                this.playerlist.removeCurrent();
+            }
+            while (this.clientlist.size > 0){
+                Client client = (Client) this.clientlist.get(0);
+                this.clientlist.remove(0);
+                client.changeOutput(this.prepareResponse("end-connection"));
+            }
+        } catch (InterruptedException e1){
+            System.err.println(e1);
+        }
         this.active = false;
-        // TODO: Falta implementar que se notifique a los clientes que la conexion ha finalizado
     }
 }

@@ -1,5 +1,4 @@
-package breakout.App;
-
+package breakout.app.View;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -9,47 +8,82 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
+import breakout.app.network.*;
+
 public class MainWindow extends Application {
+    public Server server = null;
     // Variables para IP y puerto
-    private String ipValue = "192.168.1.1"; // Valor de ejemplo para IP
-    private String portValue = "8080"; // Valor de ejemplo para Puerto
+    private String ip_example = "192.168.1.1"; // Valor de ejemplo para IP
+    private String port_example = "8080"; // Valor de ejemplo para Puerto
+    private boolean activated = false;
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Ventana Principal");
 
-        // Sección superior con nombre
-        Label nameLabel = new Label("Nombre:");
-        nameLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;");
-        HBox nameLayout = new HBox(nameLabel);
-        nameLayout.setAlignment(Pos.CENTER_LEFT);
-        nameLayout.setPadding(new Insets(10, 0, 0, 0)); // Más espacio superior
-
         // Labels para IP y puerto
         Label ipLabel = new Label("IP:");
-        ipLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); // Aumentar tamaño de letra de "IP"
+        ipLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); 
         
+        TextField ipField = new TextField();
+        ipField.setPromptText(ip_example);
+        ipField.setPrefWidth(120.0);
+
+
+        Label portLabel = new Label("Puerto:");
+        portLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); 
+
+        TextField portField = new TextField();
+        portField.setPromptText(port_example);
+        portField.setPrefWidth(120.0);
         
-        Label ipValueLabel = new Label(ipValue); // Etiqueta para el valor de la IP
-        ipValueLabel.setStyle("-fx-font-size: 14px;"); // Aumentar tamaño de letra del valor de la IP
-        
-        Label portLabel = new Label("Port:");
-        portLabel.setStyle("-fx-font-weight: bold;-fx-font-size: 14px;"); // Aumentar tamaño de letra de "Port"
-        
-        Label portValueLabel = new Label(portValue); // Etiqueta para el valor del puerto
-        portValueLabel.setStyle("-fx-font-size: 14px;"); // Aumentar tamaño de letra del valor del puerto
 
         // Botón ON/OFF
-        Button onOffButton = new Button("ON/OFF");
-        onOffButton.setPrefWidth(80); // Ancho ajustado para el texto
-        onOffButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;"); // Aumentar tamaño y estilo de texto
+        Button activeButton = new Button("Encender");
+        activeButton.setPrefWidth(80); // Ancho ajustado para el texto
+        activeButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;"); // Aumentar tamaño y estilo de texto
+        activeButton.setOnAction(event -> {
+            if (!activated){
+                String port = portField.getText();
+                String ip = ipField.getText();
+                if (port.equals("")){
+                    port = portField.getPromptText();
+                }
+                if (ip.equals("")){
+                    ip = ipField.getPromptText();
+                }
+                int port_num = Integer.parseInt(port.trim());
+                if (this.server == null){
+                    try {
+                        this.server = new Server(port_num, ip);
+                        this.server.turnON();
+                    } catch (IOException e1) {
+                        System.out.println(e1);
+                        this.server = null;
+                    }
+                } else {
+                    this.server.turnON();
+                }
+                this.startUpdaterThread();
+                activeButton.setText("Apagar");
+            } else {
+                this.server.turnOFF();
+                activeButton.setText("Encender");
+            }
+        });
 
         // HBox para IP y Puerto
-        HBox ipPortLayout = new HBox(30, ipLabel, ipValueLabel, portLabel, portValueLabel); // Más espacio entre IP y Puerto
+        VBox ipPortLabels = new VBox(10,ipLabel,portLabel);
+            ipPortLabels.setAlignment(Pos.CENTER_LEFT);
+        VBox ipPortFields = new VBox(10,ipField,portField);
+            ipPortFields.setAlignment(Pos.CENTER_LEFT);
+        HBox ipPortLayout = new HBox(20, ipPortLabels, ipPortFields); // Más espacio entre IP y Puerto
         ipPortLayout.setAlignment(Pos.CENTER_LEFT);
 
         // HBox superior que contiene ipPortLayout y el botón a la derecha
-        HBox topLayout = new HBox(10, ipPortLayout, onOffButton);
+        HBox topLayout = new HBox(10, ipPortLayout, activeButton);
         topLayout.setPadding(new Insets(10));
         topLayout.setAlignment(Pos.CENTER_LEFT); // Alinear contenido a la izquierda
         HBox.setHgrow(ipPortLayout, Priority.ALWAYS); // Hacer que ipPortLayout ocupe el espacio disponible
@@ -62,7 +96,7 @@ public class MainWindow extends Application {
         tabPane.getTabs().addAll(incomingTab, guestsTab);
 
         // Layout principal
-        VBox mainLayout = new VBox(5, nameLayout, topLayout, tabPane);
+        VBox mainLayout = new VBox(5, topLayout, tabPane);
         mainLayout.setPadding(new Insets(10));
 
         Scene scene = new Scene(mainLayout, 400, 300);
@@ -84,13 +118,32 @@ public class MainWindow extends Application {
 
         // Acciones para los botones
         acceptButton.setOnAction(event -> {
-            System.out.println("Cliente aceptado");
-            // Lo que de los sockets
+            if (this.server != null){
+                if (this.server.pending.size > 0){
+                    Client client = (Client) this.server.pending.get(0);
+                    System.out.println("Cliente aceptado");
+                    this.server.approveClient(0);
+                    if (client.type.equals("player")){
+                        ClientWindow SecondWindow= new ClientWindow((ClientPlayer)client);
+                        SecondWindow.display();
+                    }
+                }
+            }
         });
 
         rejectButton.setOnAction(event -> {
-            System.out.println("Cliente rechazado");
-            // Lo de los sockets
+            if (this.server != null){
+                try {
+                    this.server.traffic_lock.acquire();
+                    if (this.server.pending.size > 0){
+                        System.out.println("Cliente rechazado");
+                        this.server.rejectClient(0);
+                    }
+                    this.server.traffic_lock.release();
+                } catch (InterruptedException e1) {
+                    System.err.println("Mutex interrupted error:\n"+e1);
+                }
+            }
         });
 
         incomingLayout.getChildren().addAll(acceptButton, rejectButton);
@@ -111,6 +164,13 @@ public class MainWindow extends Application {
 
         guestsLayout.getChildren().addAll(spectatorButton, playerButton);
         return guestsLayout;
+    }
+
+    public void startUpdaterThread(){
+        Thread updater = new Thread(()->{
+
+        });
+        updater.start();
     }
 
     public static void main(String[] args) {

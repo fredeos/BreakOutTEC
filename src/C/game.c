@@ -39,6 +39,14 @@ typedef struct {
     int mod;
 } Bloque;
 
+typedef struct {
+    GtkWidget *widget1;
+    GtkWidget *widget2;
+    GtkWidget *widget3;
+    GtkWidget *widget4;
+    GtkWidget *widget5;
+} Bundle;
+
 enum client_type {
     PLAYER,
     SPECTATOR
@@ -46,10 +54,10 @@ enum client_type {
 
 // Atributos auxiliares para el socket
 int online = 1;
-enum client_type ct = PLAYER;
-int port = 8080;
-char* ip = "127.0.0.1";
-char* client_name = "Mr.Nobody";
+enum client_type ct;
+int port;
+char* ip;
+char* client_name;
 
 // Objetos para el socket
 struct client* client;
@@ -432,7 +440,6 @@ void exit_cmd(GtkWidget *widget, GdkEvent *event, gpointer data){
         send_message(client);
     close(client->sock_container.socket);
     free(client);
-    return FALSE;
 }
 
 gboolean enTemporizador(gpointer data) {
@@ -536,8 +543,26 @@ gboolean enTeclaPresionada(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return TRUE;
 }
 
-int main(int argc, char *argv[]) {
-    gtk_init(&argc, &argv);
+void on_button_clicked(GtkWidget *widget, gpointer data) {
+    Bundle* widgets = (Bundle *) data;
+    const char *button_label = gtk_button_get_label(GTK_BUTTON(widget));
+    const char *username_text = gtk_entry_get_text(GTK_ENTRY(widgets->widget1));
+        client_name = malloc(sizeof(username_text));
+        strcpy(client_name,username_text);
+    const char *ip_text = gtk_entry_get_text(GTK_ENTRY(widgets->widget2));
+        ip = malloc(sizeof(ip_text));
+        strcpy(ip,ip_text);
+    const char *port_text = gtk_entry_get_text(GTK_ENTRY(widgets->widget3));
+        port = atoi(port_text);
+    if (strcmp(button_label,"Jugador")==0){
+        ct = PLAYER;
+    } else if (strcmp(button_label,"Espectador")==0){
+        ct = SPECTATOR;
+    }
+    g_print("Botón presionado: %s\n", button_label);
+    g_print("Nombre de usuario: %s\n", client_name);
+    g_print("IP: %s\n", ip);
+    g_print("PUERTO: %d\n", port);
 
     GtkWidget *ventana = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(ventana), "BreakOut");
@@ -604,12 +629,52 @@ int main(int argc, char *argv[]) {
             in_json = NULL;
         receive_message(client);
             in_json = json_tokener_parse(client->INbuffer);
+        sleep(1);
     }
     struct json_object* contents = json_object_object_get(in_json,"attach");
     initiateByResponse(contents);
         json_object_put(in_json);
     g_timeout_add(40, enTemporizador, NULL);
     gtk_widget_show_all(ventana);
+    
+    // gtk_widget_destroy(GTK_WIDGET(widgets->widget4));
+}
+
+int main(int argc, char *argv[]) {
+    gtk_init(&argc, &argv);
+
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "Ventana de Usuario");
+    gtk_window_set_default_size(GTK_WINDOW(window), 300, 250);
+    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
+
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(window), vbox);
+    // ENTRADAS DE USUARIO
+    GtkWidget *username_entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(username_entry), "Username");
+    gtk_box_pack_start(GTK_BOX(vbox), username_entry, TRUE, TRUE, 0);
+    GtkWidget *ip_entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(ip_entry), "IP");
+    gtk_box_pack_start(GTK_BOX(vbox), ip_entry, TRUE, TRUE, 0);
+    GtkWidget *port_entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(port_entry), "Puerto");
+    gtk_box_pack_start(GTK_BOX(vbox), port_entry, TRUE, TRUE, 0);
+    
+    Bundle package = {username_entry, ip_entry, port_entry, window, NULL};
+    // BOTONES
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 0);
+    GtkWidget *player_button = gtk_button_new_with_label("Jugador");
+    g_signal_connect(player_button, "clicked", G_CALLBACK(on_button_clicked), &package);
+    gtk_box_pack_start(GTK_BOX(hbox), player_button, TRUE, TRUE, 0);
+    GtkWidget *spectator_button = gtk_button_new_with_label("Espectador");
+    g_signal_connect(spectator_button, "clicked", G_CALLBACK(on_button_clicked), &package);
+    gtk_box_pack_start(GTK_BOX(hbox), spectator_button, TRUE, TRUE, 0);
+    gtk_widget_show_all(window);
+
     gtk_main();
     return 0;
 }

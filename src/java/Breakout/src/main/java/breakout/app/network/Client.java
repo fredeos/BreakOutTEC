@@ -8,6 +8,7 @@ public class Client {
 
     public String identifier;
     public String username;
+    public String type;
     
     protected Socket socket;
     protected BufferedReader in;
@@ -28,6 +29,10 @@ public class Client {
             mutex.release();
         }
         return this.received;
+    }
+
+    public synchronized boolean isOnStandBy(){
+        return this.standby;
     }
 
     public void send() throws IOException{

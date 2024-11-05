@@ -17,6 +17,7 @@ public class ClientSpectator extends Client implements Subscriber {
         this.target = target;
         this.identifier = id;
         this.username = name;
+        this.type = "spectator";
         if (this.target != null){
             this.target.subscribe(this);
         }

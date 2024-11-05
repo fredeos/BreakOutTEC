@@ -14,11 +14,16 @@ import javafx.geometry.Pos;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SecondWindow {
+import breakout.app.network.ClientPlayer;
+
+public class ClientWindow {
     private List<Button> bricks = new ArrayList<>();
     private Rectangle paddle; // Raqueta
     private List<Circle> balls = new ArrayList<>(); // Lista de bolas
     
+    public ClientWindow(ClientPlayer client){
+        client.setClientWindow(this);
+    }
 
     public void display() {
         Stage window = new Stage();

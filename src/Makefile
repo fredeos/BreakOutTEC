@@ -16,6 +16,7 @@ client:
 
 java_compile:
 	cd java/Breakout; mvn compile
+
 c_tests:
 	${CC} ${NET} ${I} ${L} -o ./C/out/$@ ./C/test.c ${CUUID} ${CJSON}
 	./C/out/$@
@@ -24,6 +25,7 @@ java_test:
 	cd java/Breakout; mvn exec:java -Dexec.mainClass="breakout.app.Program"
 
 server:
-	echo alpha
+	cd java/Breakout; mvn exec:java -Dexec.mainClass="breakout.app.View.MainWindow"
+	
 clean:
 	rm -r ./out/*

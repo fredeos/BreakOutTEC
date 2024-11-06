@@ -5,27 +5,21 @@ import org.json.JSONObject;
 
 public class Racket extends GameObject {
     
-    private int[] position = { 0, 0};
+    private double position = 0.0;
     private int size = 1;
     private int speed = 1;
 
-    public Racket(int X, int Y){
-        this.position[0] = X;
-        this.position[1] = Y;
+    public Racket(double X){
+        this.position = X;
 
         this.content = new JSONObject();
-        JSONArray Vposition = new JSONArray();
-            Vposition.put(this.position[0]);
-            Vposition.put(this.position[1]);
-        
-        this.content.put("position", Vposition);
+        this.content.put("position", this.position);
         this.content.put("size", this.size);
         this.content.put("speed", this.speed);
     }
 
-    public synchronized void move(int newX, int newY){
-        this.position[0] = newX;
-        this.position[1] = newY;
+    public synchronized void move(double newX){
+        this.position = newX;
         this.updateContent(Property.POSITION);
     }
 
@@ -43,10 +37,7 @@ public class Racket extends GameObject {
     public void updateContent(Property property){
         switch (property) {
             case POSITION:
-                JSONArray Vposition = new JSONArray();
-                    Vposition.put(this.position[0]);
-                    Vposition.put(this.position[1]);
-                this.content.put("position", Vposition);
+                this.content.put("position", this.position);
                 break;
             case SPEED:
                 this.content.put("speed", this.speed);

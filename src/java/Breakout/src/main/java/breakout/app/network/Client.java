@@ -1,10 +1,10 @@
-package breakout.app.network;
+package breakout.app.network; 
 
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.Semaphore;
 
-public class Client {
+public abstract class Client {
 
     public String identifier;
     public String username;
@@ -17,33 +17,48 @@ public class Client {
 
     protected String message;
     protected String received;
-    protected Semaphore mutex = new Semaphore(1);
+    protected String priority_message = "none";
+    protected Semaphore IO_lock = new Semaphore(1);
 
     public String read() throws IOException{
         try {
-            mutex.acquire();
+            IO_lock.acquire();
             this.received = this.in.readLine();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
-            mutex.release();
+            IO_lock.release();
         }
         return this.received;
     }
 
-    public synchronized boolean isOnStandBy(){
-        return this.standby;
+    public boolean isOnStandBy(){
+        boolean flag = false;
+        try {
+            this.IO_lock.acquire();
+            flag = this.standby;
+        } catch (InterruptedException e1) {
+            System.err.println(e1);
+        } finally {
+            this.IO_lock.release();
+        }
+        return flag;
     }
 
     public void send() throws IOException{
         try {
-            mutex.acquire();
-            this.out.println(message);
+            IO_lock.acquire();
+            if (this.priority_message != "none"){
+                this.out.println(this.priority_message);
+                this.priority_message = "none";
+            } else {
+                this.out.println(this.message);
+            }
             this.out.flush();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
-            mutex.release();
+            IO_lock.release();
         }
     }
 
@@ -51,24 +66,33 @@ public class Client {
         return this.message;
     }
 
-    public synchronized void changeOutput(String content){
+    public synchronized void changeMessage(String content){
         try {
-            mutex.acquire();
+            IO_lock.acquire();
             this.message = content;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
-            mutex.release();
+            IO_lock.release();
         }
     }
 
-    public synchronized void continue_(){
-        this.standby = false;
+    public synchronized void changePriorityMessage(String content){
+        try {
+            IO_lock.acquire();
+            this.priority_message = content;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            IO_lock.release();
+        }
     }
+
+    public abstract void continue_();
 
     public synchronized void terminate() throws IOException{
         try {
-            mutex.acquire();
+            IO_lock.acquire();
             if (!this.socket.isClosed()){
                 this.socket.close();
                 this.in.close();
@@ -77,7 +101,7 @@ public class Client {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
-            mutex.release();
+            IO_lock.release();
         }
     }
 

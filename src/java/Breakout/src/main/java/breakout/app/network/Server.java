@@ -70,13 +70,13 @@ public class Server {
                         this.playerlist.insert(new_client);
                         this.pending.insert(new_client);
                         System.out.println("Clients on hold:"+this.pending.size);
-                        new_client.changeOutput(this.prepareResponse("on-standby"));
+                        new_client.changeMessage(this.prepareResponse("on-standby"));
                         this.openPlayerChannel((ClientPlayer)new_client);
                     } else {
                         new_client = new ClientSpectator(client, null, startup.getString("id"), startup.getString("name"));
                         this.clientlist.insert(new_client);
                         this.pending.insert(new_client);
-                        new_client.changeOutput(this.prepareResponse("on-standby"));
+                        new_client.changeMessage(this.prepareResponse("on-standby"));
                         this.openSpectatorChannel((ClientSpectator)new_client);
                     }
                 } catch (IOException e1) {
@@ -97,25 +97,24 @@ public class Server {
                     client.send();
                     String receivedmsg = client.read();
                     System.out.println("Mensaje del cliente"+receivedmsg);
-                    JSONObject json = new JSONObject(receivedmsg);
-                    switch (json.getString("request")) {
-                        case "end-connection":
-                            client.changeOutput(this.prepareResponse("end-connection"));
-                            client.send();
-                            client.terminate();
-                            break loop;
-                        case "no-update":
-                            client.changeOutput(this.prepareResponse("no-update"));
-                            break;
-                        case "on-standby":
-                            client.changeOutput(this.prepareResponse("on-standby"));
-                            break;
-                        default:
-                            client.process();
-                            break;
-                    }
-                    if (client.isOnStandBy()){
-                        this.approveClient(0);
+                    if (!client.isOnStandBy()) {
+                        JSONObject json = new JSONObject(receivedmsg);
+                        switch (json.getString("request")) {
+                            case "end-connection":
+                                client.changePriorityMessage(this.prepareResponse("end-connection"));
+                                client.send();
+                                client.terminate();
+                                break loop;
+                            case "no-update":
+                                client.changeMessage(this.prepareResponse("no-update"));
+                                break;
+                            case "on-standby":
+                                client.changeMessage(this.prepareResponse("on-standby"));
+                                break;
+                            default:
+                                client.process();
+                                break;
+                        }
                     }
                 } catch (IOException e1) {
                     System.err.println(e1);
@@ -195,10 +194,10 @@ public class Server {
             this.traffic_lock.acquire();
             Client client = (Client) this.pending.get(i);
             client.continue_();
-            client.changeOutput(this.prepareResponse("approve"));
+            client.changePriorityMessage(this.prepareResponse("approve"));
             this.pending.removeContent(client);
-        } catch (Exception e1) {
-            // TODO: handle exception
+        } catch (InterruptedException e1) {
+            System.err.println(e1);
         } finally {
             this.traffic_lock.release();
         }
@@ -209,7 +208,7 @@ public class Server {
             this.traffic_lock.acquire();
             Client client = (Client) this.pending.get(i);
             client.continue_();
-            client.changeOutput(this.prepareResponse("reject"));
+            client.changePriorityMessage(this.prepareResponse("reject"));
             this.pending.removeContent(client);
         } catch (Exception e1) {
             // TODO: handle exception
@@ -229,7 +228,7 @@ public class Server {
             this.traffic_lock.acquire();
             while(this.pending.size > 0){
                 Client client = (Client) this.pending.get(0);
-                client.changeOutput(this.prepareResponse("reject"));
+                client.changeMessage(this.prepareResponse("reject"));
                 this.pending.remove(0);
             }
             while(this.playerlist.size > 0){
@@ -238,7 +237,7 @@ public class Server {
             while (this.clientlist.size > 0){
                 Client client = (Client) this.clientlist.get(0);
                 this.clientlist.remove(0);
-                client.changeOutput(this.prepareResponse("end-connection"));
+                client.changeMessage(this.prepareResponse("end-connection"));
             }
         } catch (InterruptedException e1){
             System.err.println(e1);

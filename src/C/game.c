@@ -53,14 +53,14 @@ enum client_type {
 };
 
 // Atributos auxiliares para el socket
-int online = 1;
-enum client_type ct;
-int port;
-char* ip;
-char* client_name;
+static int online = 1;
+static enum client_type ct;
+static int port;
+static char* ip;
+static char* client_name;
 
 // Objetos para el socket
-struct client* client;
+static struct client* client;
 
 static GtkWidget *areaDibujo;
 static int plataformaX = (ANCHO_VENTANA - ANCHO_PLATAFORMA) / 2;
@@ -155,7 +155,11 @@ void initiateByResponse(struct json_object* contents){
             bloques[counter].visible = TRUE;
             bloques[counter].tipo = determinePower(power);
             bloques[counter].num_color = determineColor(json_object_get_string(json_object_object_get(brick,"color")));
-            bloques[counter].mod = json_object_get_int(json_object_object_get(power,"value"));
+            if (strcmp(json_object_get_string(power),"none")!=0){
+                bloques[counter].mod = json_object_get_int(json_object_object_get(power,"value"));
+            } else {
+                bloques[counter].mod = 0;
+            }
             counter++;
         }
     }
@@ -166,8 +170,8 @@ void initiateByResponse(struct json_object* contents){
         struct json_object* position = json_object_object_get(ball,"position");
         printf("Ball: %s\n",json_object_get_string(ball));
 
-        double x = ((double)json_object_get_int(json_object_array_get_idx(position,0))/100)*ANCHO_VENTANA;
-        double y = ((double)json_object_get_int(json_object_array_get_idx(position,1))/100)*ALTO_VENTANA;
+        double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*ANCHO_VENTANA;
+        double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*ALTO_VENTANA;
         int speed_mult = json_object_get_int(json_object_object_get(ball,"speed"));
         
         bolas[i].x = (int)x;
@@ -179,10 +183,9 @@ void initiateByResponse(struct json_object* contents){
     }
     // Inicializar plataforma
     struct json_object* platform = json_object_object_get(contents,"racket");
-    struct json_object* position = json_object_object_get(platform,"position");
     printf("Racket: %s\n",json_object_get_string(platform));
 
-    double x = ((double)json_object_get_int(json_object_array_get_idx(position,0))/100)*ANCHO_VENTANA;
+    double x = (json_object_get_double(json_object_object_get(platform,"position"))/100)*ANCHO_VENTANA;
     plataformaX = (int)x;
     anchoPlataforma = ANCHO_PLATAFORMA*json_object_get_int(json_object_object_get(platform,"size"));
 
@@ -191,7 +194,23 @@ void initiateByResponse(struct json_object* contents){
 
 void updateFromResponse(){
     struct json_object* in_json = json_tokener_parse(client->INbuffer);
+    const char* response = json_object_get_string(json_object_object_get(in_json,"response"));
+    if (strcmp(response,"session-updated")==0){
+        int did_server_updated = json_object_get_boolean(json_object_object_get(in_json,"server-updated"));
+        if (did_server_updated == 1){
+            struct json_object* new_info = json_object_object_get(in_json, "server-changes");
+            struct json_object* position = json_object_object_get(new_info, "position");
+            struct json_object* powerup = json_object_object_get(new_info, "powerup");
 
+            int i = json_object_get_int(json_object_array_get_idx(position,0));
+            int j = json_object_get_int(json_object_array_get_idx(position,1));
+            int index = COLUMNAS_BLOQUES*i + j;
+            printf("Bloque[%d][%d](%index): modificado con (%s)",i,j,index,json_object_get_string(powerup));
+
+            bloques[index].tipo = determinePower(powerup);
+            bloques[index].mod = json_object_get_int(json_object_object_get(powerup,"value"));
+        }
+    }
     json_object_put(in_json);
     clear_tray();
 }
@@ -294,11 +313,11 @@ void colisionarBloque(int index){
 
 void moverBola(int index, int status){
     Bola bola = bolas[index];
-    double x = bola.x/ANCHO_VENTANA * 100;
-    double y = bola.y/ALTO_VENTANA * 100;
+    double x = (double)bola.x/(double)ANCHO_VENTANA * 100;
+    double y = (double)bola.y/(double)ALTO_VENTANA * 100;
     struct json_object* posicion = json_object_new_array();
-        json_object_array_add(posicion, json_object_new_int((int)x));
-        json_object_array_add(posicion, json_object_new_int((int)y));
+        json_object_array_add(posicion, json_object_new_double(x));
+        json_object_array_add(posicion, json_object_new_double(y));
     struct json_object* objecto_bola = json_object_new_object();
         json_object_object_add(objecto_bola,"id",json_object_new_int(bola.id));
         json_object_object_add(objecto_bola,"position",posicion);
@@ -332,12 +351,9 @@ void moverPlataforma(){
     json_object_object_add(out_json,"request",json_object_new_string("update-game"));
     json_object_object_add(out_json, "action", json_object_new_string("move-racket"));
     // Parsear el objeto
-    double x = plataformaX/ANCHO_VENTANA * 100;
-    struct json_object* posicion = json_object_new_array();
-        json_object_array_add(posicion, json_object_new_int((int)x));
-        json_object_array_add(posicion, json_object_new_int(50));
+    double x = (double)plataformaX/(double)ANCHO_VENTANA * 100;
     struct json_object* plataforma = json_object_new_object();
-        json_object_object_add(plataforma, "position", posicion);
+        json_object_object_add(plataforma, "position", json_object_new_double(x));
         json_object_object_add(plataforma, "size", json_object_new_int(anchoPlataforma/ANCHO_PLATAFORMA));
     // Enviar el mensaje de actualizacion
     json_object_object_add(out_json, "attach", plataforma);
@@ -352,6 +368,7 @@ void moverPlataforma(){
 
 void aplicarEfectoBloque(int tipo, int index) {
     Bloque bloque = bloques[index];
+    int necesario = 1;
     // Activar el powerup guardado en el ladrillo
     struct json_object* out_json = json_object_new_object();
     json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
@@ -359,6 +376,9 @@ void aplicarEfectoBloque(int tipo, int index) {
     json_object_object_add(out_json,"score",json_object_new_int(puntaje));
     json_object_object_add(out_json,"request",json_object_new_string("update-game"));
     switch (tipo) {
+        case 0:
+            necesario = 0;
+            break;
         case 1: 
             json_object_object_add(out_json,"action",json_object_new_string("apply-powerup:add-life"));
             vidas++;
@@ -426,8 +446,10 @@ void aplicarEfectoBloque(int tipo, int index) {
             send_message(client);
             break;
     }
-    receive_message(client);
-    updateFromResponse();
+    if (necesario == 1){
+        receive_message(client);
+        updateFromResponse();
+    }
     json_object_put(out_json);
 }
 
@@ -438,8 +460,10 @@ void exit_cmd(GtkWidget *widget, GdkEvent *event, gpointer data){
     json_object_object_add(out_json, "request", json_object_new_string("end-connection"));
         update_post(out_json);
         send_message(client);
+    json_object_put(out_json);
     close(client->sock_container.socket);
     free(client);
+    gtk_main_quit();
 }
 
 gboolean enTemporizador(gpointer data) {
@@ -502,15 +526,17 @@ gboolean enTemporizador(gpointer data) {
                 bolas[i].activa = FALSE;
                 bolasActivas--;
                 vidas--;
+                moverBola(i,0);
                 if (vidas <= 0) {
                     g_print("Juego terminado\n");
-                    out_json = json_object_new_object();
-                    json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
-                    json_object_object_add(out_json,"name",json_object_new_string(client_name));
-                    json_object_object_add(out_json, "request", json_object_new_string("end-connection"));
+                        out_json = json_object_new_object();
+                        json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
+                        json_object_object_add(out_json,"name",json_object_new_string(client_name));
+                        json_object_object_add(out_json, "request", json_object_new_string("end-connection"));
                         update_post(out_json);
                         send_message(client);
-                    close(client->sock_container.socket);
+                        json_object_put(out_json);
+                        close(client->sock_container.socket);
                     free(client);
                     gtk_main_quit();
                 } else {
@@ -620,24 +646,24 @@ void on_button_clicked(GtkWidget *widget, gpointer data) {
             update_post(out_json);
             send_message(client);
             // La aplicacion se tiene que cerrar sola
-            return 0;
+            return;
         } else if (strcmp(response,"closing")==0){
             // La aplicacion se tiene que cerrar sola
-            return 0;
+            return;
         }
         json_object_put(in_json);
             in_json = NULL;
         receive_message(client);
             in_json = json_tokener_parse(client->INbuffer);
-        sleep(1);
+        g_usleep(150000);
     }
     struct json_object* contents = json_object_object_get(in_json,"attach");
     initiateByResponse(contents);
         json_object_put(in_json);
-    g_timeout_add(40, enTemporizador, NULL);
+    g_timeout_add(35, enTemporizador, NULL);
     gtk_widget_show_all(ventana);
     
-    // gtk_widget_destroy(GTK_WIDGET(widgets->widget4));
+    gtk_widget_hide(GTK_WIDGET(widgets->widget4));
 }
 
 int main(int argc, char *argv[]) {

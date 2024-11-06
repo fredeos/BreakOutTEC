@@ -8,10 +8,10 @@ import org.json.JSONArray;
 public class Ball extends GameObject {
 
     public int id;
-    private int[] position = {0, 0};
+    private double[] position = {0, 0};
     private int speed = 1;
 
-    public Ball(int X, int Y){
+    public Ball(double X, double Y){
         Random gen = new Random();
         this.id = gen.nextInt(9999);
         this.position[0] = X;
@@ -26,7 +26,7 @@ public class Ball extends GameObject {
         this.content.put("speed", this.speed);
     }
 
-    public Ball(int X, int Y, int id){
+    public Ball(double X, double Y, int id){
         this.id = id;
         this.position[0] = X;
         this.position[1] = Y;
@@ -40,7 +40,7 @@ public class Ball extends GameObject {
         this.content.put("speed", this.speed);
     }
 
-    public synchronized void move(int newX, int newY){
+    public synchronized void move(double newX, double newY){
         this.position[0] = newX;
         this.position[1] = newY;
         this.updateContent(Property.POSITION);
@@ -52,7 +52,7 @@ public class Ball extends GameObject {
     }
 
     public Ball duplicate(){
-        Ball newinstance = new Ball(this.position[0], this.position[1]);
+        Ball newinstance = new Ball(50.0, 50.0);
             newinstance.setSpeed(this.speed);
         return newinstance;
     }

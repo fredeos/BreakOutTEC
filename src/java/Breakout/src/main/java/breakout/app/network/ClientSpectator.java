@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import breakout.app.network.observer.Subscriber; 
+import breakout.app.network.observer.Subscriber;  
 
 public class ClientSpectator extends Client implements Subscriber {
 
@@ -18,6 +18,7 @@ public class ClientSpectator extends Client implements Subscriber {
         this.identifier = id;
         this.username = name;
         this.type = "spectator";
+        this.standby = true;
         if (this.target != null){
             this.target.subscribe(this);
         }
@@ -26,6 +27,18 @@ public class ClientSpectator extends Client implements Subscriber {
             this.out = new PrintWriter(this.socket.getOutputStream());
         } catch (IOException e) {
             System.err.println("ERROR: No se pudieron iniciar los componentes necesarios para el cliente\nDETALLE:\n"+e);
+        }
+    }
+
+    @Override
+    public synchronized void continue_(){
+        try {
+            this.IO_lock.acquire();
+            this.standby = false;
+        } catch (InterruptedException e1) {
+            System.err.println(e1);
+        } finally {
+            this.IO_lock.release();
         }
     }
 

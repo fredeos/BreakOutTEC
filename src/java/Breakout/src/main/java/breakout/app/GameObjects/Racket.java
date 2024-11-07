@@ -5,36 +5,30 @@ import org.json.JSONObject;
 
 public class Racket extends GameObject {
     
-    private float[] position = { 0.0f, 0.0f};
-    private double size = 1.0;
-    private float speed = 1.0f;
+    private double position = 0.0;
+    private int size = 1;
+    private int speed = 1;
 
-    public Racket(float X, float Y){
-        this.position[0] = X;
-        this.position[1] = Y;
+    public Racket(double X){
+        this.position = X;
 
         this.content = new JSONObject();
-        JSONArray Vposition = new JSONArray();
-            Vposition.put(this.position[0]);
-            Vposition.put(this.position[1]);
-        
-        this.content.put("position", Vposition);
+        this.content.put("position", this.position);
         this.content.put("size", this.size);
         this.content.put("speed", this.speed);
     }
 
-    public synchronized void move(float newX, float newY){
-        this.position[0] = newX;
-        this.position[1] = newY;
+    public synchronized void move(double newX){
+        this.position = newX;
         this.updateContent(Property.POSITION);
     }
 
-    public synchronized void setSize(double newSize){
+    public synchronized void setSize(int newSize){
         this.size = newSize;
         this.updateContent(Property.SIZE);
     }
 
-    public synchronized void setSpeed(float newSpeed){
+    public synchronized void setSpeed(int newSpeed){
         this.speed = newSpeed;
         this.updateContent(Property.SPEED);
     }
@@ -43,10 +37,7 @@ public class Racket extends GameObject {
     public void updateContent(Property property){
         switch (property) {
             case POSITION:
-                JSONArray Vposition = new JSONArray();
-                    Vposition.put(this.position[0]);
-                    Vposition.put(this.position[1]);
-                this.content.put("position", Vposition);
+                this.content.put("position", this.position);
                 break;
             case SPEED:
                 this.content.put("speed", this.speed);

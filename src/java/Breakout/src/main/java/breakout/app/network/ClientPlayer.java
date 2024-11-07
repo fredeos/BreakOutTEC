@@ -6,22 +6,26 @@ import java.net.Socket;
 import org.json.JSONArray;
 import org.json.JSONObject; 
 
-import breakout.app.Controller.SessionController;
+import breakout.app.Controller.SessionController; 
+import breakout.app.View.ClientWindow;
 
-import breakout.app.Structures.LinkedList;
-import breakout.app.network.observer.*;
+import breakout.app.Structures.LinkedList; 
+import breakout.app.network.observer.*; 
 
 public class ClientPlayer extends Client implements Publisher {
 
     private LinkedList subscribers;
     private SessionController session;
+    private ClientWindow window;
 
     public ClientPlayer(Socket client, String id, String name){
         this.socket = client;
         this.subscribers = new LinkedList();
         this.identifier = id;
         this.username = name;
+        this.type = "player";
         this.session = null;
+        this.window = null;
         try {
             this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
             this.out = new PrintWriter(this.socket.getOutputStream());
@@ -30,11 +34,38 @@ public class ClientPlayer extends Client implements Publisher {
         }
     }
 
+    public synchronized void setClientWindow(ClientWindow window){
+        this.window = window;  
+        this.window.setSession(this.session);
+    }
+
+    @Override
+    public String read() throws IOException{
+        try {
+            this.IO_lock.acquire();
+            this.received = this.in.readLine();
+            System.out.println("CLIENTE JUGADOR: "+this.received); 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            this.IO_lock.release();
+            this.NotifyAll();
+        }
+        return this.received;
+    }
+
     @Override
     public synchronized void continue_(){
-        this.standby = false;
-        this.session = new SessionController(this);
-        this.session.initiate();
+        try {
+            this.IO_lock.acquire();
+            this.standby = false;
+            this.session = new SessionController(this);
+            this.session.initiate();
+        } catch (InterruptedException e1) {
+            System.err.println(e1);
+        } finally {
+            this.IO_lock.release();
+        }
     }
 
     public synchronized void process(){
@@ -45,44 +76,97 @@ public class ClientPlayer extends Client implements Publisher {
                 response.put("code", 100);
                 response.put("request", "initiate-game");
                 response.put("response", "session-created");
-                json.put("description", "new-game");
+                response.put("description", "new-game");
                 response.put("attach", this.session.getSessionInformation()); 
                 break;
             case "update-game":
-                String action = json.getString("action");
+                String[] parameters = json.getString("action").split(":");
+                String action = parameters[0];
+
                 response.put("code", 100);
                 response.put("request", "update-game");
-                response.put("response", "session-updated-succesfully");
-                json.put("description", "data-updated");
+                response.put("response", "session-updated");
+                response.put("description", "data-updated");
                 response.put("action", action);
-                if (action == "move-ball"){
-                    JSONArray balls = json.getJSONArray("attach");
-                    for (int i = 0; i < balls.length(); i++){
-                        JSONObject ball = balls.getJSONObject(i);
-                        JSONArray position = ball.getJSONArray("position");
-                        this.session.moveBall(ball.getString("id"), position.getFloat(0), position.getFloat(1));
-                    }
-                } else if (action == "move-racket"){
+                if (action.equals("move-ball")){
+                    JSONObject ball = json.getJSONObject("attach");
+                    JSONArray position = ball.getJSONArray("position");
+                    this.session.moveBall(ball.getInt("id"), position.getDouble(0), position.getDouble(1));
+                } else if (action.equals("move-racket")){
                     JSONObject racket = json.getJSONObject("attach");
-                    JSONArray position = racket.getJSONArray("position");
-                    this.session.moveRacket(position.getFloat(0), position.getFloat(1));
-                } else if (action == "strike-brick"){
+                    double position = racket.getDouble("position");
+                    this.session.moveRacket(position);
+                } else if (action.equals("strike-brick")){
                     JSONObject brick = json.getJSONObject("attach");
                     JSONArray position = brick.getJSONArray("position");
                     this.session.registerHitOnBrick(position.getInt(0), position.getInt(1));
-                    if (this.session.changes != "none"){
-                        response.put("changes", true);
-                        response.put("attach", this.session.changes);
-                    } else {
-                        response.put("changes", false);
-                    }
-                    this.session.changes = "none";
+                } else if (action.equals("rm-ball")){ 
+                    JSONObject ball = json.getJSONObject("attach");
+                    this.session.deleteBall(ball.getInt("id"));
+                } else { // Caso de apply-powerup
+                    String powerup_type = parameters[1];
+                    if (powerup_type.equals("add-life")){
+                        int total_life = json.getInt("attach");
+                        this.session.increaseLife(total_life);
+                    } else if (powerup_type.equals("add-ball")){
+                        JSONObject new_ball = json.getJSONObject("attach");
+                        JSONArray position = new_ball.getJSONArray("position");
+                        this.session.addNewBall(new_ball.getInt("id"), position.getDouble(0),position.getDouble(1));
+                    } else if (powerup_type.equals("increase-ball-speed")){
+                        int speed = json.getInt("attach");
+                        this.session.increaseBallSpeed(speed);
+                    } else if (powerup_type.equals("increase-racket-speed")){
+                        int speed = json.getInt("attach");
+                        this.session.increaseRacketSpeed(speed);
+                    } else if (powerup_type.equals("increase-racket-size")){
+                        int size = json.getInt("attach");
+                        this.session.increaseRacketSize(size);
+                    } 
                 }
+                // Obtener los cambios hechos en la sesion
+                if (this.session.getServerChanges().isEmpty()){
+                    response.put("server-updated",false);
+                } else {
+                    response.put("server-updated",true);
+                    response.put("server-changes",this.session.getServerChanges());
+                }
+                if (this.session.getClientChanges().isEmpty()){
+                    response.put("client-updated",false);
+                } else {
+                    response.put("client-updated",true);
+                    response.put("client-changes",this.session.getClientChanges());
+                }
+                this.session.clearChanges();
+                break;
             default:
                 break;
         }
-        this.changeOutput(response.toString());
-        this.NotifyAll();
+        this.changeMessage(response.toString());
+    }
+
+    public synchronized JSONObject acquireSessionData(){ 
+        return this.session.getSessionInformation();
+    }
+
+    @Override
+    public synchronized void terminate() throws IOException{
+        try {
+            IO_lock.acquire();
+            while (this.subscribers.size > 0){
+                Subscriber subscriber = (Subscriber)this.subscribers.get(0);
+                    subscriber.update(this.received);
+                this.unsubscribe(subscriber); 
+            }
+            if (!this.socket.isClosed()){
+                this.socket.close();
+                this.in.close();
+                this.out.close();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            IO_lock.release();
+        }
     }
 
     @Override 
@@ -97,6 +181,7 @@ public class ClientPlayer extends Client implements Publisher {
 
     @Override
     public synchronized void NotifyAll(){
+        System.out.println("Notificando clientes");
         for (int i = 0; i < this.subscribers.size; i++){
             Subscriber subscriber = (Subscriber) this.subscribers.get(i);
             this.Notify(subscriber);
@@ -105,7 +190,7 @@ public class ClientPlayer extends Client implements Publisher {
 
     @Override
     public synchronized void Notify(Subscriber subscriber){
-        subscriber.update(this.message);
+        subscriber.update(this.received);
     }
     
 }

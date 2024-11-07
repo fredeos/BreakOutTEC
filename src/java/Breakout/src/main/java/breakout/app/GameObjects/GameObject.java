@@ -8,6 +8,7 @@ public abstract class GameObject {
     protected abstract void updateContent(Property property);
 
     public JSONObject getContent(){
-        return this.content;
+        JSONObject json = new JSONObject(content.toString());
+        return json;
     }
 };

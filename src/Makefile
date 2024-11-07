@@ -11,7 +11,7 @@ CUUID = -luuid
 CJSON = -ljson-c
 
 client:
-	${CC} `pkg-config --cflags gtk+-3.0` -o ./C/out/$@ ./C/game.c `pkg-config --libs gtk+-3.0`
+	${CC} ${NET} ${I} ${L} `pkg-config --cflags gtk+-3.0` -o ./C/out/$@ ./C/game.c `pkg-config --libs gtk+-3.0` ${CUUID} ${CJSON}
 	./C/out/$@
 
 java_compile:
@@ -25,6 +25,7 @@ java_test:
 	cd java/Breakout; mvn exec:java -Dexec.mainClass="breakout.app.Program"
 
 server:
-	echo alpha
+	cd java/Breakout; mvn exec:java -Dexec.mainClass="breakout.app.View.MainWindow"
+	
 clean:
 	rm -r ./out/*

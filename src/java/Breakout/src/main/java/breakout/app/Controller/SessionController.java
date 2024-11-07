@@ -33,16 +33,16 @@ public class SessionController {
         for (int i = 0; i < 4; i++){
             for (int j = 0; j<8; j++){
                 if (i == 0){
-                    this.session.bricks[i][j] = new Brick(1, "green", i, j);
+                    this.session.bricks[i][j] = new Brick(1, "red", i, j);
                     //this.session.bricks[i][j].setPowerUp(new AddBall(1));
                 } else if(i == 1){
-                    this.session.bricks[i][j] = new Brick(1, "yellow", i, j);
+                    this.session.bricks[i][j] = new Brick(1, "orange", i, j);
                     //this.session.bricks[i][j].setPowerUp(new SizeIncrease(2));
                 } else if(i == 2){
-                    this.session.bricks[i][j] = new Brick(1, "orange", i, j);
+                    this.session.bricks[i][j] = new Brick(1, "yellow", i, j);
                     //this.session.bricks[i][j].setPowerUp(new SpeedIncrease(2,"ball"));
                 } else if(i == 3){
-                    this.session.bricks[i][j] = new Brick(1, "red", i, j);
+                    this.session.bricks[i][j] = new Brick(1, "green", i, j);
                     //this.session.bricks[i][j].setPowerUp(new AddLife(1));
                 }
             }

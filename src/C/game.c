@@ -26,6 +26,8 @@
 #define DEFAULT_PLATFORM_SPEED 4
 #define DEFAULT_LIFE 3
 #define BALL_LIMIT 10
+#define LOCALHOST "127.0.0.1"
+#define DEFAULT_PORT 8080
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // Bloque de estructuras del jueg
@@ -217,9 +219,9 @@ void initiateByResponse(struct json_object* contents){
     // Inicializar bloques
     int counter = 0;
     struct json_object* bricks_list = json_object_object_get(contents,"bricks");
-    for (int i = MAX_ROWS-1; i >= 0; i--) {
+    for (int i = 0; i < MAX_ROWS; i++) {
         struct json_object* layer = json_object_array_get_idx(bricks_list,i);
-        for (int j = MAX_COLUMNS-1; j >= 0; j--){
+        for (int j = 0; j < MAX_COLUMNS; j++){
             struct json_object* brick = json_object_array_get_idx(layer,j);
             struct json_object* power = json_object_object_get(brick,"powerup");
             printf("Brick: %s\n",json_object_get_string(brick));
@@ -298,8 +300,8 @@ void playerUpdateFromResponse(){
 /* */
 void brickCollision(int index){
     // Buscar bloque y definir su posicion en matriz
-    int i = index/MAX_COLUMNS;
-    int j = index - i*MAX_COLUMNS;
+    int i = (index / MAX_COLUMNS);
+    int j = (index % MAX_COLUMNS);
     Brick brick = bricks[index];
     // Parsear bloque
     struct json_object* position = json_object_new_array();
@@ -717,24 +719,25 @@ void spectatorUpdateFromResponse(){
         const char* imposed_request = json_object_get_string(json_object_object_get(changes,"request"));
         if (strcmp(imposed_request,"update-game")==0){
             const char* imposed_change = json_object_get_string(json_object_object_get(changes,"action"));
-            if (strcmp(imposed_change,"move-ball")==0){
-                struct json_object* ball_object = json_object_object_get(changes,"attach");
-                struct json_object* position = json_object_object_get(ball_object,"position");
-                double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
-                double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
+            // if (strcmp(imposed_change,"move-ball")==0){
+            //     struct json_object* ball_object = json_object_object_get(changes,"attach");
+            //     struct json_object* position = json_object_object_get(ball_object,"position");
+            //     double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
+            //     double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
 
-                int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
-                for (int i = 0; i < BALL_LIMIT; i++){
-                    Ball ball = balls[i];
-                    if (ball.id == target_ball_id && ball.activa == TRUE){
-                        ball.x = (int)x;
-                        ball.y = (int)y;
-                        ball.dx = DEFAULT_BALL_SPEED;
-                        ball.dy = DEFAULT_BALL_SPEED;
-                        break;
-                    }
-                }
-            } else if (strcmp(imposed_change,"strike-brick")==0){
+            //     int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
+            //     for (int i = 0; i < BALL_LIMIT; i++){
+            //         Ball ball = balls[i];
+            //         if (ball.id == target_ball_id && ball.activa == TRUE){
+            //             ball.x = (int)x;
+            //             ball.y = (int)y;
+            //             ball.dx = DEFAULT_BALL_SPEED;
+            //             ball.dy = DEFAULT_BALL_SPEED;
+            //             break;
+            //         }
+            //     }
+            // } 
+            if (strcmp(imposed_change,"strike-brick")==0){
                 struct json_object* brick_object = json_object_object_get(changes,"attach");
                 struct json_object* position = json_object_object_get(brick_object,"position");
 
@@ -742,50 +745,51 @@ void spectatorUpdateFromResponse(){
                 int j = json_object_get_int(json_object_array_get_idx(position,1));
                 int index = MAX_COLUMNS*i + j;
                 bricks[index].visible = FALSE;
-            } else if (strcmp(imposed_change,"add-ball")==0){
-                struct json_object* ball_object = json_object_object_get(changes,"attach");
-                struct json_object* position = json_object_object_get(ball_object,"position");
-                double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
-                double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
-
-                int new_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
-                for (int i = 0; i < BALL_LIMIT; i++){
-                    Ball ball = balls[i];
-                    if (ball.activa == FALSE){
-                        ball.x = (int)x;
-                        ball.y = (int)y;
-                        ball.dx = DEFAULT_BALL_SPEED;
-                        ball.dy = DEFAULT_BALL_SPEED,
-                        ball.activa = TRUE;
-                        ball.id = new_ball_id;
-                        break;
-                    }
-                }
-            } else if (strcmp(imposed_change,"rm-ball")==0){
-                struct json_object* ball_object = json_object_object_get(changes,"attach");
-                int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
-                for (int i = 0; i < BALL_LIMIT; i++){
-                    Ball ball = balls[i];
-                    if (ball.id == target_ball_id){
-                        ball.x = 0;
-                        ball.y = 0;
-                        ball.dx = 0;
-                        ball.dy = 0,
-                        ball.activa = FALSE;
-                        ball.id = 0;
-                        break;
-                    }
-                }
-            } else if (strcmp(imposed_change,"move-racket")==0){
-                struct json_object* platform_object = json_object_object_get(changes,"attach");
-                double x_position = (json_object_get_double(json_object_object_get(platform_object,"position"))/100)*WINDOW_WIDTH;
-                int size_mult = json_object_get_int(json_object_object_get(platform_object,"speed"));
-
-                platform_x_coord = (int)x_position;
-                platform_width = PLATFORM_WIDTH*size_mult;
+            } else if (strcmp(imposed_request,"end-connection")==0){
+                spectator_selection = 5;
             }
-        } else if (strcmp(imposed_request,"end-connection")==0){
-            spectator_selection = 5;
+        //     else if (strcmp(imposed_change,"add-ball")==0){
+        //         struct json_object* ball_object = json_object_object_get(changes,"attach");
+        //         struct json_object* position = json_object_object_get(ball_object,"position");
+        //         double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
+        //         double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
+
+        //         int new_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
+        //         for (int i = 0; i < BALL_LIMIT; i++){
+        //             Ball ball = balls[i];
+        //             if (ball.activa == FALSE){
+        //                 ball.x = (int)x;
+        //                 ball.y = (int)y;
+        //                 ball.dx = DEFAULT_BALL_SPEED;
+        //                 ball.dy = DEFAULT_BALL_SPEED,
+        //                 ball.activa = TRUE;
+        //                 ball.id = new_ball_id;
+        //                 break;
+        //             }
+        //         }
+        //     } else if (strcmp(imposed_change,"rm-ball")==0){
+        //         struct json_object* ball_object = json_object_object_get(changes,"attach");
+        //         int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
+        //         for (int i = 0; i < BALL_LIMIT; i++){
+        //             Ball ball = balls[i];
+        //             if (ball.id == target_ball_id){
+        //                 ball.x = 0;
+        //                 ball.y = 0;
+        //                 ball.dx = 0;
+        //                 ball.dy = 0,
+        //                 ball.activa = FALSE;
+        //                 ball.id = 0;
+        //                 break;
+        //             }
+        //         }
+        //     } else if (strcmp(imposed_change,"move-racket")==0){
+        //         struct json_object* platform_object = json_object_object_get(changes,"attach");
+        //         double x_position = (json_object_get_double(json_object_object_get(platform_object,"position"))/100)*WINDOW_WIDTH;
+        //         int size_mult = json_object_get_int(json_object_object_get(platform_object,"speed"));
+
+        //         platform_x_coord = (int)x_position;
+        //         platform_width = PLATFORM_WIDTH*size_mult;
+        //     }
         }
     } else if (strcmp(response,"closing")==0){
         online = 0;
@@ -949,7 +953,7 @@ void openGameEvent(GtkWidget *widget, gpointer data) {
     if ( ct == PLAYER){
         g_timeout_add(30, playerTimeout, NULL);
     } else if ( ct == SPECTATOR) {
-        g_timeout_add(60, spectactorTimeout, NULL);
+        g_timeout_add(30, spectactorTimeout, NULL);
     }
     gtk_widget_show_all(window);
     

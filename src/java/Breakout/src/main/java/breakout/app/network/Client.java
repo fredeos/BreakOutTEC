@@ -1,4 +1,4 @@
-package breakout.app.network; 
+package breakout.app.network;
 
 import java.io.*;
 import java.net.*;
@@ -22,12 +22,13 @@ public abstract class Client {
 
     public String read() throws IOException{
         try {
-            IO_lock.acquire();
+            this.IO_lock.acquire();
             this.received = this.in.readLine();
+            System.out.println("CLIENTE: "+this.received);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
-            IO_lock.release();
+            this.IO_lock.release();
         }
         return this.received;
     }
@@ -48,10 +49,12 @@ public abstract class Client {
     public void send() throws IOException{
         try {
             IO_lock.acquire();
-            if (this.priority_message != "none"){
+            if (!this.priority_message.equals("none")){
+                System.out.println("SERVIDOR: "+this.priority_message);
                 this.out.println(this.priority_message);
                 this.priority_message = "none";
             } else {
+                System.out.println("SERVIDOR: "+this.message);
                 this.out.println(this.message);
             }
             this.out.flush();

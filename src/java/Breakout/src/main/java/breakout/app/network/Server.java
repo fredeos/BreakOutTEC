@@ -63,11 +63,11 @@ public class Server {
                     JSONObject startup = new JSONObject(message);
                     String type = startup.getString("type");
 
+                    this.traffic_lock.acquire();
                     Client new_client;
                     if (type.equals("player")){
                         new_client = new ClientPlayer(client, startup.getString("id"), startup.getString("name"));
                         this.clientlist.insert(new_client);
-                        this.playerlist.insert(new_client);
                         this.pending.insert(new_client);
                         System.out.println("Clients on hold:"+this.pending.size);
                         new_client.changeMessage(this.prepareResponse("on-standby"));
@@ -79,9 +79,12 @@ public class Server {
                         new_client.changeMessage(this.prepareResponse("on-standby"));
                         this.openSpectatorChannel((ClientSpectator)new_client);
                     }
+                    this.traffic_lock.release();
                 } catch (IOException e1) {
                     System.err.println(e1);
                     break;
+                } catch (InterruptedException e2){
+                    System.err.println(e2);
                 }
             } while (this.isActive());
             System.out.println("Finalizando sala de espera...");
@@ -96,14 +99,23 @@ public class Server {
                 try {
                     client.send();
                     String receivedmsg = client.read();
-                    System.out.println("Mensaje del cliente"+receivedmsg);
                     if (!client.isOnStandBy()) {
                         JSONObject json = new JSONObject(receivedmsg);
                         switch (json.getString("request")) {
                             case "end-connection":
                                 client.changePriorityMessage(this.prepareResponse("end-connection"));
                                 client.send();
+                                this.traffic_lock.acquire();
+                                this.clientlist.removeContent(client);
+                                while (true) {
+                                    if (this.playerlist.getCurrent() == client){
+                                        this.playerlist.removeCurrent();
+                                        break;
+                                    }
+                                    this.playerlist.goForward();
+                                }
                                 client.terminate();
+                                this.traffic_lock.release();
                                 break loop;
                             case "no-update":
                                 client.changeMessage(this.prepareResponse("no-update"));
@@ -119,6 +131,8 @@ public class Server {
                 } catch (IOException e1) {
                     System.err.println(e1);
                     break;
+                }  catch (InterruptedException e2){
+                    System.err.println(e2);
                 }
             }
         });
@@ -128,21 +142,67 @@ public class Server {
     private void openSpectatorChannel(ClientSpectator client){
         Thread communication_thread = new Thread(()->{
             System.out.println("Escuchando al cliente espectador: "+client.username+"."+client.identifier);
-            while (this.isActive()){
-                if(!client.standby){
-                    try {
-                        String receivedmsg = client.read();
-                        switch (receivedmsg) {
-                            case "next-player":
+            loop: while (this.isActive()){
+                try {
+                    client.send();
+                    String receivedmsg = client.read();
+                    if(!client.isOnStandBy()){
+                        JSONObject json = new JSONObject(receivedmsg);
+                        switch (json.getString("request")) {
+                            case "end-connection":
+                                client.changePriorityMessage(this.prepareResponse("end-connection"));
+                                client.send();
+                                this.traffic_lock.acquire();
+                                this.clientlist.removeContent(client);
+                                client.terminate();
+                                this.traffic_lock.release();
+                                break loop;
+                            case "spectating-player":
+                                client.acquireUpdate();
                                 break;
-                        
+                            case "waiting-for-player":
+                                this.traffic_lock.acquire();
+                                if (this.playerlist.size > 0){
+                                    client.changeTarget((ClientPlayer)this.playerlist.getCurrent());
+                                    client.acquireUpdate();
+                                } else {
+                                    client.changeMessage(this.prepareResponse("no-player-yet"));
+                                }
+                                this.traffic_lock.release();
+                                break;
+                            case "spectator-lost-visual":
+                                client.changeTarget(null);
+                                client.changeMessage("no-player-yet");
+                                break;
+                            case "next-player":
+                                this.traffic_lock.acquire();
+                                if (this.playerlist.size > 0){
+                                    client.changeTarget((ClientPlayer)this.playerlist.goForward());
+                                    client.acquireUpdate();
+                                } else {
+                                    client.changeMessage(this.prepareResponse("no-player-yet"));
+                                }
+                                this.traffic_lock.release();
+                                break;
+                            case "previous-player":
+                                this.traffic_lock.acquire();
+                                if (this.playerlist.size > 0){
+                                    client.changeTarget((ClientPlayer)this.playerlist.goBackward());
+                                    client.acquireUpdate();
+                                } else {
+                                    client.changeMessage(this.prepareResponse("no-player-yet"));
+                                }
+                                this.traffic_lock.release();
+                                break;
                             default:
+                                client.changeMessage(this.prepareResponse("no-update"));
                                 break;
                         }
-                        client.send();
-                    } catch (IOException e) {
-                        // TODO: handle exception
                     }
+                } catch (IOException e1) {
+                    System.err.println(e1);
+                } catch (InterruptedException e2){
+                    System.err.println(e2);
                 }
             }
         });
@@ -182,20 +242,33 @@ public class Server {
                 json.put("request", "no-update");
                 json.put("response", "standby");
                 json.put("description", "wait");
+                break;
+            case "no-player-yet":
+                json.put("code", 100);
+                json.put("request", "waiting-for-player");
+                json.put("response", "no-player-yet");
+                json.put("description", "wait");
+                break;
             default:
                 break;
         }
         jsonresponse = json.toString();
+        System.out.println("RESPUESTA PREPARADA[SERVER]: "+jsonresponse);
         return jsonresponse;
     }
 
     public synchronized void approveClient(int i){
         try {
             this.traffic_lock.acquire();
+            System.out.println(this.pending.size);
             Client client = (Client) this.pending.get(i);
             client.continue_();
             client.changePriorityMessage(this.prepareResponse("approve"));
+            if (client.type.equals("player")){
+                this.playerlist.insert(client);
+            }
             this.pending.removeContent(client);
+            System.out.println(this.pending.size);
         } catch (InterruptedException e1) {
             System.err.println(e1);
         } finally {
@@ -206,12 +279,14 @@ public class Server {
     public synchronized void rejectClient(int i){
         try {
             this.traffic_lock.acquire();
+            System.out.println(this.pending.size);
             Client client = (Client) this.pending.get(i);
             client.continue_();
             client.changePriorityMessage(this.prepareResponse("reject"));
             this.pending.removeContent(client);
-        } catch (Exception e1) {
-            // TODO: handle exception
+            System.out.println(this.pending.size);
+        } catch (InterruptedException e1) {
+            System.err.println(e1);
         } finally {
             this.traffic_lock.release();
         }
@@ -228,7 +303,7 @@ public class Server {
             this.traffic_lock.acquire();
             while(this.pending.size > 0){
                 Client client = (Client) this.pending.get(0);
-                client.changeMessage(this.prepareResponse("reject"));
+                client.changePriorityMessage(this.prepareResponse("reject"));
                 this.pending.remove(0);
             }
             while(this.playerlist.size > 0){
@@ -237,7 +312,7 @@ public class Server {
             while (this.clientlist.size > 0){
                 Client client = (Client) this.clientlist.get(0);
                 this.clientlist.remove(0);
-                client.changeMessage(this.prepareResponse("end-connection"));
+                client.changePriorityMessage(this.prepareResponse("end-connection"));
             }
         } catch (InterruptedException e1){
             System.err.println(e1);

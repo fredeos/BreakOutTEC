@@ -35,8 +35,23 @@ public class ClientPlayer extends Client implements Publisher {
     }
 
     public synchronized void setClientWindow(ClientWindow window){
-        this.window = window;
+        this.window = window;  
         this.window.setSession(this.session);
+    }
+
+    @Override
+    public String read() throws IOException{
+        try {
+            this.IO_lock.acquire();
+            this.received = this.in.readLine();
+            System.out.println("CLIENTE JUGADOR: "+this.received); 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            this.IO_lock.release();
+            this.NotifyAll();
+        }
+        return this.received;
     }
 
     @Override
@@ -108,7 +123,7 @@ public class ClientPlayer extends Client implements Publisher {
                         this.session.increaseRacketSize(size);
                     } 
                 }
-                // Obtener los cambios del hechos en la sesion
+                // Obtener los cambios hechos en la sesion
                 if (this.session.getServerChanges().isEmpty()){
                     response.put("server-updated",false);
                 } else {
@@ -127,7 +142,31 @@ public class ClientPlayer extends Client implements Publisher {
                 break;
         }
         this.changeMessage(response.toString());
-        this.NotifyAll();
+    }
+
+    public synchronized JSONObject acquireSessionData(){ 
+        return this.session.getSessionInformation();
+    }
+
+    @Override
+    public synchronized void terminate() throws IOException{
+        try {
+            IO_lock.acquire();
+            while (this.subscribers.size > 0){
+                Subscriber subscriber = (Subscriber)this.subscribers.get(0);
+                    subscriber.update(this.received);
+                this.unsubscribe(subscriber); 
+            }
+            if (!this.socket.isClosed()){
+                this.socket.close();
+                this.in.close();
+                this.out.close();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            IO_lock.release();
+        }
     }
 
     @Override 
@@ -142,6 +181,7 @@ public class ClientPlayer extends Client implements Publisher {
 
     @Override
     public synchronized void NotifyAll(){
+        System.out.println("Notificando clientes");
         for (int i = 0; i < this.subscribers.size; i++){
             Subscriber subscriber = (Subscriber) this.subscribers.get(i);
             this.Notify(subscriber);

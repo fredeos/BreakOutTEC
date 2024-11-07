@@ -71,13 +71,13 @@ public class ClientWindow {
 
         // Creación de los ladrillos
         for (int row = 0; row < 4; row++) {
-            String color = "green";
+            String color = "red";
             if (row == 1){
-                color = "yellow";
-            } else if (row == 2){
                 color = "orange";
+            } else if (row == 2){
+                color = "yellow";
             } else if (row == 3){
-                color = "red";
+                color = "green";
             }
             for (int col = 0; col < 8; col++) {
                 Button brickButton = createBrickButton("", color, row, col);

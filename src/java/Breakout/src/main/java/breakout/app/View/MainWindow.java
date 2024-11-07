@@ -15,7 +15,7 @@ import breakout.app.network.*;
 public class MainWindow extends Application {
     public Server server = null;
     // Variables para IP y puerto
-    private String ip_example = "192.168.1.1"; // Valor de ejemplo para IP
+    private String ip_example = "127.0.0.1"; // Valor de ejemplo para IP
     private String port_example = "8080"; // Valor de ejemplo para Puerto
     private boolean activated = false;
 
@@ -39,7 +39,6 @@ public class MainWindow extends Application {
         portField.setPromptText(port_example);
         portField.setPrefWidth(120.0);
         
-
         // Botón ON/OFF
         Button activeButton = new Button("Encender");
         activeButton.setPrefWidth(80); // Ancho ajustado para el texto
@@ -96,7 +95,7 @@ public class MainWindow extends Application {
         tabPane.getTabs().addAll(incomingTab, guestsTab);
 
         // Layout principal
-        VBox mainLayout = new VBox(5, topLayout, tabPane);
+        VBox mainLayout = new VBox(5, topLayout, tabPane); 
         mainLayout.setPadding(new Insets(10));
 
         Scene scene = new Scene(mainLayout, 400, 300);
@@ -134,15 +133,10 @@ public class MainWindow extends Application {
 
         rejectButton.setOnAction(event -> {
             if (this.server != null){
-                try {
-                    this.server.traffic_lock.acquire();
-                    if (this.server.pending.size > 0){
-                        System.out.println("Cliente rechazado");
-                        this.server.rejectClient(0);
-                    }
-                    this.server.traffic_lock.release();
-                } catch (InterruptedException e1) {
-                    System.err.println("Mutex interrupted error:\n"+e1);
+                if (this.server.pending.size > 0){
+                    Client client = (Client) this.server.pending.get(0);
+                    System.out.println("\nCliente["+client.identifier+":"+client.username+"} rechazado");
+                    this.server.rejectClient(0);
                 }
             }
         });

@@ -90,7 +90,7 @@ public class ClientPlayer extends Client implements Publisher {
                 response.put("action", action);
                 if (action.equals("move-ball")){
                     JSONObject ball = json.getJSONObject("attach");
-                    JSONArray position = ball.getJSONArray("position");
+                    JSONArray position = ball.getJSONArray("position"); 
                     this.session.moveBall(ball.getInt("id"), position.getDouble(0), position.getDouble(1));
                 } else if (action.equals("move-racket")){
                     JSONObject racket = json.getJSONObject("attach");

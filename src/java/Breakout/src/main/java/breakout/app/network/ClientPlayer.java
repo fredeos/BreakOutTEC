@@ -100,6 +100,7 @@ public class ClientPlayer extends Client implements Publisher {
                     JSONObject brick = json.getJSONObject("attach");
                     JSONArray position = brick.getJSONArray("position");
                     this.session.registerHitOnBrick(position.getInt(0), position.getInt(1));
+                    this.window.updateOnScreenElements();
                 } else if (action.equals("rm-ball")){ 
                     JSONObject ball = json.getJSONObject("attach");
                     this.session.deleteBall(ball.getInt("id"));

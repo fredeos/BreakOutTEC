@@ -15,6 +15,9 @@ import javafx.geometry.Pos;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import breakout.app.network.ClientPlayer;
 import breakout.app.Structures.Pair;
 import breakout.app.Controller.SessionController;
@@ -39,15 +42,21 @@ public class ClientWindow {
 
     public synchronized void setSession(SessionController session){
         this.client_session = session;
-        this.createOnScreenElements();
-    }
-
-    public synchronized void createOnScreenElements(){
-        
     }
 
     public synchronized void updateOnScreenElements(){
-
+        JSONObject game = this.client_session.getSessionInformation();
+        JSONArray bricks = game.getJSONArray("bricks");
+        for (int i = 0; i < bricks.length(); i++){
+            JSONArray layer = bricks.getJSONArray(i);
+            for (int j = 0; j < layer.length(); j++){
+                JSONObject brick = layer.getJSONObject(j);
+                Button brick_button = this.bricks.get(i*8+j);
+                if (brick.getInt("durability")==0){
+                    brick_button.setVisible(false);
+                }
+            }
+        }
     }
 
     public synchronized void close(){
@@ -94,11 +103,12 @@ public class ClientWindow {
 
         // Entrada de texto para valores de poder
         TextField valueField = new TextField();
+        valueField.setPrefSize(60.0, 30.0);
         valueField.setEditable(false);
         valueField.setText("1");
 
         // Botón de poder 1
-        Button addBallButton = new Button("BOLA++");
+        Button addBallButton = new Button("BOLAS");
         addBallButton.setOnAction(e -> {
             System.out.println("Bola agregada!");
             String number = valueField.getText();
@@ -108,7 +118,7 @@ public class ClientWindow {
         powerButtonsLayout.getChildren().add(addBallButton);
 
         // Botón de poder 2
-        Button addLifeButton = new Button("LIFE++");
+        Button addLifeButton = new Button("VIDAS");
         addLifeButton.setOnAction(e -> {
             System.out.println("Vida agregada!");
             String number = valueField.getText();
@@ -118,7 +128,7 @@ public class ClientWindow {
         powerButtonsLayout.getChildren().add(addLifeButton);
 
         // Botón de poder 3
-        Button moreBallSpeedButton = new Button("SPD++");
+        Button moreBallSpeedButton = new Button("VLC");
         moreBallSpeedButton.setOnAction(e -> {
             System.out.println("Bonus de velocidad agregado!");
             String number = valueField.getText();
@@ -128,7 +138,7 @@ public class ClientWindow {
         powerButtonsLayout.getChildren().add(moreBallSpeedButton);
 
         // Botón de poder 4
-        Button moreRacketSize = new Button("SIZE++");
+        Button moreRacketSize = new Button("TAMAÑO");
         moreRacketSize.setOnAction(e -> {
             System.out.println("Bola agregada!");
             String number = valueField.getText();
@@ -176,6 +186,23 @@ public class ClientWindow {
         Button brickButton = new Button(name);
         brickButton.setStyle("-fx-background-color: " + color + "; -fx-min-width: 60px; -fx-min-height: 30px;");
         brickButton.setOnAction(event -> {
+            Button otherbrick = bricks.get(8*this.selected_block[0]+this.selected_block[1]);
+            switch (this.selected_block[0]) {
+                case 0:
+                    otherbrick.setStyle("-fx-background-color: red; -fx-min-width: 60px; -fx-min-height: 30px;");
+                    break;
+                case 1:
+                    otherbrick.setStyle("-fx-background-color: orange; -fx-min-width: 60px; -fx-min-height: 30px;");
+                    break;
+                case 2:
+                    otherbrick.setStyle("-fx-background-color: yellow; -fx-min-width: 60px; -fx-min-height: 30px;");
+                    break;
+                case 3:
+                    otherbrick.setStyle("-fx-background-color: green; -fx-min-width: 60px; -fx-min-height: 30px;");
+                    break;
+                default:
+                    break;
+            }
             this.setSelectedBlock(i, j);
             brickButton.setStyle("-fx-background-color: grey; -fx-min-width: 60px; -fx-min-height: 30px;");
             System.out.println(i+","+j);

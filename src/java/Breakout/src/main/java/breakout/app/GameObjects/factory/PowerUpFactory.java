@@ -22,11 +22,11 @@ public class PowerUpFactory {
                 break;
             case "racket-speed":
                 int r_speed_mult = (int)value;
-                power = new SizeIncrease(r_speed_mult);
+                power = new SpeedIncrease(r_speed_mult, "racket");
                 break;
             case "racket-size":
                 int r_size_mult =  (int)value;
-                power = new SpeedIncrease(r_size_mult, "racket");
+                power = new SizeIncrease(r_size_mult);
                 break;
             case "additional-life":
                 int extra =  (int)value;

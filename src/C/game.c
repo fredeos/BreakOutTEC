@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------------------------------------------------------------------
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 600
-#define PLATFORM_WIDTH 80
+#define PLATFORM_WIDTH 45
 #define PLATFORM_HEIGHT 10
 #define BALL_SIZE 10
 #define BRICK_WIDTH 60
@@ -82,7 +82,7 @@ static GtkWidget *DrawArea;
 static int platform_x_coord = (WINDOW_WIDTH - PLATFORM_WIDTH) / 2;
 static int platform_width = PLATFORM_WIDTH;
 static int life = DEFAULT_LIFE;
-static int ball_speed = DEFAULT_BALL_SPEED;
+static int ball_speed = 1;
 static int active_balls = 1;
 static Ball balls[BALL_LIMIT];
 static Brick bricks[MAX_ROWS*MAX_COLUMNS];
@@ -93,6 +93,10 @@ static int score = 0;
 // Funciones adicionales para los sockets en el juego
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
+/* Actualiza el buffer de salida del socket con un objeto json 
+Parametros:
+- out_json: objeto json con contenido para el servidor
+*/
 void update_post(struct json_object* out_json){
     const char* str = json_object_get_string(out_json);
     size_t len = strlen(str);
@@ -103,6 +107,7 @@ void update_post(struct json_object* out_json){
     client->OUTbuffer = out_str;
 }
 
+/* Limpia los buffers del socket */
 void clear_tray(){
     free(client->OUTbuffer);
     memset(client->INbuffer,0,sizeof(client->INbuffer));
@@ -112,7 +117,9 @@ void clear_tray(){
 // Funciones generales del juego
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-/* */
+/* Recibe un objeto json que contiene los atributos de un poder y retorna el numero que representa el poder
+segun su categoria y modificador
+*/
 int determinePower(struct json_object* powerup){
     if (strcmp(json_object_get_string(powerup),"none")==0){
         return 0;
@@ -144,7 +151,7 @@ int determinePower(struct json_object* powerup){
     return 0;
 }
 
-/* */
+/* Determina el codigo de color para un objeto segun el string dado*/
 int determineColor(const char* color){
     int colorcode = 0;
     if (strcmp(color,"green")==0){
@@ -159,21 +166,32 @@ int determineColor(const char* color){
     return colorcode;
 }
 
-/* */
+/* Evento de GTK para cerrar la aplicacion */
 void onExitEvent(GtkWidget *widget, GdkEvent *event, gpointer data){
     struct json_object* out_json = json_object_new_object();
     json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
     json_object_object_add(out_json,"name",json_object_new_string(client_name));
     json_object_object_add(out_json, "request", json_object_new_string("end-connection"));
+    update_post(out_json);
+    send_message(client);
+    while (online == 1){
+        receive_message(client);
+        struct json_object* in_json = json_object_new_object();
+        const char* response = json_object_get_string(json_object_object_get(in_json,"response"));
+        if (strcmp(response,"closing")==0){
+            online == 0;
+        }
+        json_object_put(in_json);
+        clear_tray();
         update_post(out_json);
-        send_message(client);
+    }
     json_object_put(out_json);
     close(client->sock_container.socket);
     free(client);
     gtk_main_quit();
 }
 
-/* */
+/* Evento de GTK para dibujar en pantalla los objetos del juego */
 gboolean drawOnEvent(GtkWidget *widget, cairo_t *cr, gpointer data) {
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_paint(cr);
@@ -215,6 +233,7 @@ gboolean drawOnEvent(GtkWidget *widget, cairo_t *cr, gpointer data) {
 // Funciones del JUGADOR
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
+/* Inicializa los objetos del juego segun los datos enviado por el servidor en un objeto json */
 void initiateByResponse(struct json_object* contents){
     // Inicializar bloques
     int counter = 0;
@@ -273,7 +292,7 @@ void initiateByResponse(struct json_object* contents){
     memset(client->INbuffer,0,sizeof(client->INbuffer));
 }
 
-/* */
+/* Actualiza los objetos de juego para el jugador segun la actualizacion del servidor */
 void playerUpdateFromResponse(){
     struct json_object* in_json = json_tokener_parse(client->INbuffer);
     const char* response = json_object_get_string(json_object_object_get(in_json,"response"));
@@ -292,12 +311,14 @@ void playerUpdateFromResponse(){
             bricks[index].tipo = determinePower(powerup);
             bricks[index].mod = json_object_get_int(json_object_object_get(powerup,"value"));
         }
+    } else if (strcmp(response,"closing")==0){
+        online = 0;
     }
     json_object_put(in_json);
     clear_tray();
 }
 
-/* */
+/* Reporta una colision con un bloque al servidor */
 void brickCollision(int index){
     // Buscar bloque y definir su posicion en matriz
     int i = (index / MAX_COLUMNS);
@@ -341,7 +362,7 @@ void brickCollision(int index){
     json_object_put(out_json);
 }
 
-/* */
+/* Reporta el movimiento de una bola al servidor */
 void moveBall(int index, int status){
     Ball ball = balls[index];
     double x = (double)ball.x/(double)WINDOW_WIDTH * 100;
@@ -374,7 +395,7 @@ void moveBall(int index, int status){
     json_object_put(out_json);
 }
 
-/* */
+/* Reporta el movimiento de la plataforma al servidor */
 void movePlatform(){
     struct json_object* out_json = json_object_new_object();
     json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
@@ -398,9 +419,9 @@ void movePlatform(){
     json_object_put(out_json);
 }
 
-/* */
+/* Aplica un powerup en la logica de juego local y notifica el cambio al servidor */
 void applyBrickPowerUp(int tipo, int index) {
-    Brick bloque = bricks[index];
+    Brick brick = bricks[index];
     int necesario = 1;
     // Activar el powerup guardado en el ladrillo
     struct json_object* out_json = json_object_new_object();
@@ -414,7 +435,7 @@ void applyBrickPowerUp(int tipo, int index) {
             break;
         case 1: 
             json_object_object_add(out_json,"action",json_object_new_string("apply-powerup:add-life"));
-            life++;
+            life += brick.mod;
             json_object_object_add(out_json,"attach",json_object_new_int(life));
             update_post(out_json);
             send_message(client);
@@ -432,8 +453,8 @@ void applyBrickPowerUp(int tipo, int index) {
                     balls[i].dy = -DEFAULT_BALL_SPEED;
                     balls[i].id = rand() % 10000;
                     // Parsear una nueva bola
-                    double x = balls[i].x / WINDOW_WIDTH * 100;
-                    double y = balls[i].y / WINDOW_HEIGHT * 100;
+                    double x = (double)balls[i].x / (double)WINDOW_WIDTH * 100;
+                    double y = (double)balls[i].y / (double)WINDOW_HEIGHT * 100;
                     struct json_object* posicion = json_object_new_array();
                         json_object_array_add(posicion,json_object_new_int((int)x));
                         json_object_array_add(posicion,json_object_new_int((int)y));
@@ -451,14 +472,14 @@ void applyBrickPowerUp(int tipo, int index) {
             break;
         case 3: 
             json_object_object_add(out_json,"action",json_object_new_string("apply-powerup:increase-racket-size"));
-            platform_width *= 2; 
+            platform_width *= abs(brick.mod); 
             json_object_object_add(out_json,"attach",json_object_new_int(platform_width/PLATFORM_WIDTH));
             update_post(out_json);
             send_message(client);
             break;
         case 4:
             json_object_object_add(out_json,"action",json_object_new_string("apply-powerup:increase-racket-size"));
-            platform_width /= 2; 
+            platform_width /= abs(brick.mod); 
             if (platform_width < PLATFORM_WIDTH / 2) platform_width = PLATFORM_WIDTH / 2; 
             json_object_object_add(out_json,"attach",json_object_new_int(platform_width/PLATFORM_WIDTH));
             update_post(out_json);
@@ -466,14 +487,14 @@ void applyBrickPowerUp(int tipo, int index) {
             break;
         case 5: 
             json_object_object_add(out_json,"action",json_object_new_string("apply-powerup:increase-ball-speed"));
-            ball_speed += 2; 
+            ball_speed += brick.mod; 
             json_object_object_add(out_json,"attach",json_object_new_int(ball_speed));
             update_post(out_json);
             send_message(client);
             break;
         case 6: 
             json_object_object_add(out_json,"action",json_object_new_string("apply-powerup:increase-ball-speed"));
-            if (ball_speed > 2) ball_speed -= 2;
+            if (ball_speed > 2) ball_speed -= brick.mod;
             json_object_object_add(out_json,"attach",json_object_new_int(ball_speed));
             update_post(out_json);
             send_message(client);
@@ -486,6 +507,7 @@ void applyBrickPowerUp(int tipo, int index) {
     json_object_put(out_json);
 }
 
+/* Evento de GTK para realizar los procesos de actualizacion en los objetos locales y reportarlos al servidor*/
 gboolean playerTimeout(gpointer data) {
     // Siempre manda un mensaje intermitente de que el juego no ha actualizado nada
     struct json_object* out_json = json_object_new_object();
@@ -501,12 +523,17 @@ gboolean playerTimeout(gpointer data) {
     // Se recibe una respuesta que puede o no modificar el estado del juego
     receive_message(client);
     playerUpdateFromResponse();
+    if (online == 0){
+        close(client->sock_container.socket);
+        free(client);
+        gtk_main_quit();
+    }
     // Logica normal del juego
         for (int i = 0; i < BALL_LIMIT; i++) {
             if (!balls[i].activa) continue;
             // Movimiento
-            balls[i].x += balls[i].dx;
-            balls[i].y += balls[i].dy;
+            balls[i].x += balls[i].dx * ball_speed;
+            balls[i].y += balls[i].dy * ball_speed;
 
             moveBall(i, 1);
 
@@ -549,16 +576,13 @@ gboolean playerTimeout(gpointer data) {
                 moveBall(i,0);
                 if (life <= 0) {
                     g_print("Juego terminado\n");
-                        out_json = json_object_new_object();
-                        json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
-                        json_object_object_add(out_json,"name",json_object_new_string(client_name));
-                        json_object_object_add(out_json, "request", json_object_new_string("end-connection"));
-                        update_post(out_json);
-                        send_message(client);
-                        json_object_put(out_json);
-                        close(client->sock_container.socket);
-                    free(client);
-                    gtk_main_quit();
+                    out_json = json_object_new_object();
+                    json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
+                    json_object_object_add(out_json,"name",json_object_new_string(client_name));
+                    json_object_object_add(out_json, "request", json_object_new_string("end-connection"));
+                    update_post(out_json);
+                    send_message(client);
+                    json_object_put(out_json);
                 } else {
                     // Reiniciar posición de la bola principal si quedan vidas
                     balls[0].activa = TRUE;
@@ -574,7 +598,7 @@ gboolean playerTimeout(gpointer data) {
     return TRUE;
 }
 
-
+/* Evento de GTK para detectar los inputs de las teclas de movimiento y mover la plataforma */
 gboolean onKeyPressPlayer(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     if (event->keyval == GDK_KEY_Left) {
         platform_x_coord -= 20;
@@ -593,11 +617,11 @@ gboolean onKeyPressPlayer(GtkWidget *widget, GdkEventKey *event, gpointer data) 
 // Funciones del ESPECATDOR
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-/* */
+/* Inicializa los datos de juego con valores default (mientras se espera a ser conectado a alguna sesion de un jugador)*/
 void nullInitiate(){
     int counter = 0;
-    for (int i = MAX_ROWS-1; i >= 0; i--) {
-        for (int j = MAX_COLUMNS-1; j >= 0; j--){
+    for (int i = 0; i < MAX_ROWS; i++) {
+        for (int j = 0; j < MAX_COLUMNS; j++){
             bricks[counter].x = (counter % 8) * (BRICK_WIDTH + 5) + 10;
             bricks[counter].y = (counter / 8) * (BRICK_HEIGHT + 5) + 10;
             bricks[counter].ancho = BRICK_WIDTH;
@@ -622,6 +646,7 @@ void nullInitiate(){
     platform_width = PLATFORM_WIDTH;
 }
 
+/* Determina el mensaje de peticion segun la seleccion actual */
 const char* formSpectatorRequest(int type){
     switch (type){
         case 1:
@@ -638,7 +663,7 @@ const char* formSpectatorRequest(int type){
     return "waiting-for-player";
 }
 
-/* */
+/* Cambia los datos del juego con los datos que el servidor recopilo del jugador */
 void reconfigureFromUpdate(struct json_object* contents){
     // Inicializar bloques
     int counter = 0;
@@ -705,6 +730,7 @@ void reconfigureFromUpdate(struct json_object* contents){
     platform_width = PLATFORM_WIDTH*json_object_get_int(json_object_object_get(platform,"size"));
 }
 
+/* Hace una lectura del json de actualizacion del servidor y configura una respuesta */
 void spectatorUpdateFromResponse(){
     struct json_object* in_json = json_tokener_parse(client->INbuffer);
     const char* response = json_object_get_string(json_object_object_get(in_json,"response"));
@@ -719,25 +745,24 @@ void spectatorUpdateFromResponse(){
         const char* imposed_request = json_object_get_string(json_object_object_get(changes,"request"));
         if (strcmp(imposed_request,"update-game")==0){
             const char* imposed_change = json_object_get_string(json_object_object_get(changes,"action"));
-            // if (strcmp(imposed_change,"move-ball")==0){
-            //     struct json_object* ball_object = json_object_object_get(changes,"attach");
-            //     struct json_object* position = json_object_object_get(ball_object,"position");
-            //     double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
-            //     double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
+            if (strcmp(imposed_change,"move-ball")==0){
+                struct json_object* ball_object = json_object_object_get(changes,"attach");
+                struct json_object* position = json_object_object_get(ball_object,"position");
+                double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
+                double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
 
-            //     int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
-            //     for (int i = 0; i < BALL_LIMIT; i++){
-            //         Ball ball = balls[i];
-            //         if (ball.id == target_ball_id && ball.activa == TRUE){
-            //             ball.x = (int)x;
-            //             ball.y = (int)y;
-            //             ball.dx = DEFAULT_BALL_SPEED;
-            //             ball.dy = DEFAULT_BALL_SPEED;
-            //             break;
-            //         }
-            //     }
-            // } 
-            if (strcmp(imposed_change,"strike-brick")==0){
+                int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
+                for (int i = 0; i < BALL_LIMIT; i++){
+                    Ball ball = balls[i];
+                    if (ball.id == target_ball_id && ball.activa == TRUE){
+                        ball.x = (int)x;
+                        ball.y = (int)y;
+                        ball.dx = DEFAULT_BALL_SPEED;
+                        ball.dy = DEFAULT_BALL_SPEED;
+                        break;
+                    }
+                }
+            } else if (strcmp(imposed_change,"strike-brick")==0){
                 struct json_object* brick_object = json_object_object_get(changes,"attach");
                 struct json_object* position = json_object_object_get(brick_object,"position");
 
@@ -745,51 +770,50 @@ void spectatorUpdateFromResponse(){
                 int j = json_object_get_int(json_object_array_get_idx(position,1));
                 int index = MAX_COLUMNS*i + j;
                 bricks[index].visible = FALSE;
-            } else if (strcmp(imposed_request,"end-connection")==0){
+            } else if (strcmp(imposed_change,"add-ball")==0){
+                struct json_object* ball_object = json_object_object_get(changes,"attach");
+                struct json_object* position = json_object_object_get(ball_object,"position");
+                double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
+                double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
+
+                int new_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
+                for (int i = 0; i < BALL_LIMIT; i++){
+                    Ball ball = balls[i];
+                    if (ball.activa == FALSE){
+                        ball.x = (int)x;
+                        ball.y = (int)y;
+                        ball.dx = DEFAULT_BALL_SPEED;
+                        ball.dy = DEFAULT_BALL_SPEED,
+                        ball.activa = TRUE;
+                        ball.id = new_ball_id;
+                        break;
+                    }
+                }
+            } else if (strcmp(imposed_change,"rm-ball")==0){
+                struct json_object* ball_object = json_object_object_get(changes,"attach");
+                int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
+                for (int i = 0; i < BALL_LIMIT; i++){
+                    Ball ball = balls[i];
+                    if (ball.id == target_ball_id){
+                        ball.x = 0;
+                        ball.y = 0;
+                        ball.dx = 0;
+                        ball.dy = 0,
+                        ball.activa = FALSE;
+                        ball.id = 0;
+                        break;
+                    }
+                }
+            } else if (strcmp(imposed_change,"move-racket")==0){
+                struct json_object* platform_object = json_object_object_get(changes,"attach");
+                double x_position = (json_object_get_double(json_object_object_get(platform_object,"position"))/100)*WINDOW_WIDTH;
+                int size_mult = json_object_get_int(json_object_object_get(platform_object,"speed"));
+
+                platform_x_coord = (int)x_position;
+                platform_width = PLATFORM_WIDTH*size_mult;
+            }  else if (strcmp(imposed_request,"end-connection")==0){
                 spectator_selection = 5;
             }
-        //     else if (strcmp(imposed_change,"add-ball")==0){
-        //         struct json_object* ball_object = json_object_object_get(changes,"attach");
-        //         struct json_object* position = json_object_object_get(ball_object,"position");
-        //         double x = (json_object_get_double(json_object_array_get_idx(position,0))/100)*WINDOW_WIDTH;
-        //         double y = (json_object_get_double(json_object_array_get_idx(position,1))/100)*WINDOW_HEIGHT;
-
-        //         int new_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
-        //         for (int i = 0; i < BALL_LIMIT; i++){
-        //             Ball ball = balls[i];
-        //             if (ball.activa == FALSE){
-        //                 ball.x = (int)x;
-        //                 ball.y = (int)y;
-        //                 ball.dx = DEFAULT_BALL_SPEED;
-        //                 ball.dy = DEFAULT_BALL_SPEED,
-        //                 ball.activa = TRUE;
-        //                 ball.id = new_ball_id;
-        //                 break;
-        //             }
-        //         }
-        //     } else if (strcmp(imposed_change,"rm-ball")==0){
-        //         struct json_object* ball_object = json_object_object_get(changes,"attach");
-        //         int target_ball_id = json_object_get_int(json_object_object_get(ball_object,"id"));
-        //         for (int i = 0; i < BALL_LIMIT; i++){
-        //             Ball ball = balls[i];
-        //             if (ball.id == target_ball_id){
-        //                 ball.x = 0;
-        //                 ball.y = 0;
-        //                 ball.dx = 0;
-        //                 ball.dy = 0,
-        //                 ball.activa = FALSE;
-        //                 ball.id = 0;
-        //                 break;
-        //             }
-        //         }
-        //     } else if (strcmp(imposed_change,"move-racket")==0){
-        //         struct json_object* platform_object = json_object_object_get(changes,"attach");
-        //         double x_position = (json_object_get_double(json_object_object_get(platform_object,"position"))/100)*WINDOW_WIDTH;
-        //         int size_mult = json_object_get_int(json_object_object_get(platform_object,"speed"));
-
-        //         platform_x_coord = (int)x_position;
-        //         platform_width = PLATFORM_WIDTH*size_mult;
-        //     }
         }
     } else if (strcmp(response,"closing")==0){
         online = 0;
@@ -800,7 +824,7 @@ void spectatorUpdateFromResponse(){
     clear_tray();
 }
 
-/* */
+/* Evento de GTK para realizar los procesos de actualizacion del espectador */
 gboolean spectactorTimeout(gpointer data){
     struct json_object* out_json = json_object_new_object();
     json_object_object_add(out_json,"id",json_object_new_string(client->uuid));
@@ -819,7 +843,7 @@ gboolean spectactorTimeout(gpointer data){
     return TRUE;
 }
 
-/* */
+/* Evento de GTK para detectar los inputs del usuario para moverse al siguiente jugador o al anterior*/
 gboolean onKeyPressSpectator(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     if (event->keyval == GDK_KEY_Left) {
         spectator_selection = 2;
@@ -834,18 +858,30 @@ gboolean onKeyPressSpectator(GtkWidget *widget, GdkEventKey *event, gpointer dat
 // Metodos de inicio y ejecucion del programa
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-/* */
+/* Evento de GTK para activar la ventana de juego segun la configuracion de conexion establecida*/
 void openGameEvent(GtkWidget *widget, gpointer data) {
     Bundle* widgets = (Bundle *) data;
     const char *button_label = gtk_button_get_label(GTK_BUTTON(widget));
     const char *username_text = gtk_entry_get_text(GTK_ENTRY(widgets->widget1));
-        client_name = malloc(sizeof(username_text));
-        strcpy(client_name,username_text);
+        if (strcmp(username_text,"")==0){
+            client_name = "gtkX";
+        } else {
+            client_name = malloc(sizeof(username_text));
+            strcpy(client_name,username_text);
+        }
     const char *ip_text = gtk_entry_get_text(GTK_ENTRY(widgets->widget2));
-        ip = malloc(sizeof(ip_text));
-        strcpy(ip,ip_text);
+        if (strcmp(ip_text,"")==0){
+            ip = LOCALHOST;
+        } else {
+            ip = malloc(sizeof(ip_text));
+            strcpy(ip,ip_text);
+        }
     const char *port_text = gtk_entry_get_text(GTK_ENTRY(widgets->widget3));
-        port = atoi(port_text);
+        if (strcmp(port_text,"")==0){
+            port = DEFAULT_PORT;
+        } else {
+            port = atoi(port_text);
+        }
     if (strcmp(button_label,"Jugador")==0){
         ct = PLAYER;
     } else if (strcmp(button_label,"Espectador")==0){
@@ -961,6 +997,7 @@ void openGameEvent(GtkWidget *widget, gpointer data) {
     return;
 }
 
+/* Metodo prinicipal para inicializar GTK y la aplicacion */
 int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
 
@@ -1003,5 +1040,3 @@ int main(int argc, char *argv[]) {
     gtk_main();
     return 0;
 }
-
-

@@ -25,6 +25,7 @@ java_test:
 	cd java/Breakout; mvn exec:java -Dexec.mainClass="breakout.app.Program"
 
 server:
+	ip -4 addr show
 	cd java/Breakout; mvn exec:java -Dexec.mainClass="breakout.app.View.MainWindow"
 	
 clean:

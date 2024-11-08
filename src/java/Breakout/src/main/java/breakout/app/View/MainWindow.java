@@ -41,7 +41,6 @@ public class MainWindow extends Application {
         
         // Botón ON/OFF
         Button activeButton = new Button("Encender");
-        activeButton.setPrefWidth(80); // Ancho ajustado para el texto
         activeButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;"); // Aumentar tamaño y estilo de texto
         activeButton.setOnAction(event -> {
             if (!activated){
@@ -120,9 +119,7 @@ public class MainWindow extends Application {
             if (this.server != null){
                 if (this.server.pending.size > 0){
                     Client client = (Client) this.server.pending.get(0);
-                    System.out.println("\nCliente["+client.identifier+":"+client.username+"} aceptado");
                     this.server.approveClient(0);
-                    System.out.println("\nMensaje preparado: "+ client.checkOutput());
                     if (client.type.equals("player")){
                         ClientWindow SecondWindow= new ClientWindow((ClientPlayer)client);
                         SecondWindow.display();

@@ -253,7 +253,6 @@ public class Server {
                 break;
         }
         jsonresponse = json.toString();
-        System.out.println("RESPUESTA PREPARADA[SERVER]: "+jsonresponse);
         return jsonresponse;
     }
 
